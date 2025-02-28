@@ -7,68 +7,63 @@ import { verifyJWT } from "@/lib/jwt"
 const ITEMS_PER_PAGE = 10
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const page = Number.parseInt(searchParams.get("page") || "0")
-  const status = searchParams.get("status")
-  const date = searchParams.get("date")
-  
-  // Get user from JWT token
-  const token = cookies().get("token")?.value
-  const payload = token ? verifyJWT(token) : null
-
-  let dateFilter = {}
-  if (date) {
-    const now = new Date()
-    switch (date) {
-      case "day":
-        dateFilter = { createdAt: { gte: sub(now, { days: 1 }) } }
-        break
-      case "week":
-        dateFilter = { createdAt: { gte: sub(now, { weeks: 1 }) } }
-        break
-      case "month":
-        dateFilter = { createdAt: { gte: sub(now, { months: 1 }) } }
-        break
+  try {
+    const { searchParams } = new URL(request.url)
+    const status = searchParams.get("status")
+    const cursor = searchParams.get("cursor")
+    const limit = parseInt(searchParams.get("limit") || "10")
+    
+    // Get user from JWT token
+    const token = cookies().get("token")?.value
+    const payload = token ? await verifyJWT(token) : null
+    const userId = payload?.id
+    
+    // Build the query
+    const where = {
+      ...(status ? { status } : {}),
     }
-  }
-
-  const where = {
-    ...(status && { status }),
-    ...dateFilter,
-  }
-
-  const [requests, total] = await Promise.all([
-    prisma.featureRequest.findMany({
+    
+    // Fetch feature requests with pagination
+    const requests = await prisma.featureRequest.findMany({
       where,
-      orderBy: [{ upvotes: { _count: "desc" } }, { createdAt: "desc" }],
-      skip: page * ITEMS_PER_PAGE,
-      take: ITEMS_PER_PAGE,
+      take: limit,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+      orderBy: {
+        upvotes: {
+          _count: "desc",
+        },
+      },
       include: {
         _count: {
           select: { upvotes: true },
         },
-        upvotes: payload
+        upvotes: userId
           ? {
-              where: { userId: payload.id },
+              where: { userId },
             }
           : false,
       },
-    }),
-    prisma.featureRequest.count({ where }),
-  ])
-
-  const formattedRequests = requests.map((request) => ({
-    ...request,
-    upvotes: request._count.upvotes,
-    hasUpvoted: payload ? request.upvotes.length > 0 : false,
-    isOwner: payload ? request.userId === payload.id : false,
-  }))
-
-  return NextResponse.json({
-    requests: formattedRequests,
-    hasMore: (page + 1) * ITEMS_PER_PAGE < total,
-    nextPage: page + 1,
-  })
+    })
+    
+    // Format the response with user-specific upvote status
+    const formattedRequests = requests.map(request => ({
+      ...request,
+      upvotes: request._count.upvotes,
+      hasUpvoted: userId ? request.upvotes.length > 0 : false,
+      isOwner: userId ? request.userId === userId : false,
+    }))
+    
+    // Get the next cursor
+    const nextCursor = requests.length === limit ? requests[requests.length - 1].id : null
+    
+    return NextResponse.json({
+      requests: formattedRequests,
+      nextCursor,
+    })
+  } catch (error) {
+    console.error("Error fetching feature requests:", error)
+    return new NextResponse("Internal server error", { status: 500 })
+  }
 }
 
 export async function POST(request: Request) {

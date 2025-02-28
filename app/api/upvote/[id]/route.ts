@@ -62,6 +62,21 @@ export async function DELETE(
 
     const requestId = params.id
 
+    // First check if the upvote exists
+    const existingUpvote = await prisma.upvote.findUnique({
+      where: {
+        userId_requestId: {
+          userId: payload.id,
+          requestId,
+        },
+      },
+    })
+
+    // If upvote doesn't exist, return success anyway to keep client in sync
+    if (!existingUpvote) {
+      return NextResponse.json({ success: true, message: "Upvote already removed" })
+    }
+
     // Delete the upvote
     await prisma.upvote.delete({
       where: {

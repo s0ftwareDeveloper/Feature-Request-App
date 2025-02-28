@@ -2,10 +2,11 @@ import { FeatureRequestList } from "@/components/feature-request-list"
 import { FilterBar } from "@/components/filter-bar"
 import { cookies } from "next/headers"
 import { verifyJWT } from "@/lib/jwt"
+import { FeatureRequestCard } from "@/components/feature-request-card"
 
 export default async function Home() {
   const token = cookies().get("token")?.value
-  const payload = token ? verifyJWT(token) : null
+  const payload = token ? await verifyJWT(token) : null
   const isAdmin = payload?.role === "admin"
 
   return (

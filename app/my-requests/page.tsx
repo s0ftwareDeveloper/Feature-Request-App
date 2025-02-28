@@ -49,7 +49,12 @@ export default async function MyRequests() {
       ) : (
         <div className="space-y-4">
           {formattedRequests.map((request) => (
-            <FeatureRequestCard key={request.id} request={request} isAdmin={isAdmin} />
+            <FeatureRequestCard 
+              key={request.id} 
+              request={request} 
+              isAdmin={isAdmin} 
+              showDeleteButton={true}
+            />
           ))}
         </div>
       )}
