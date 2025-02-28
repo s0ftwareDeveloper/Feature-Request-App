@@ -13,6 +13,7 @@ import { StatusChangeButton } from "./status-change-button"
 import { useAuth } from "@/hooks/use-auth"
 import api from "@/lib/axios"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 
 type FeatureRequest = {
   id: string
@@ -36,7 +37,7 @@ export function FeatureRequestCard({
   isAdmin, 
   showDeleteButton = false 
 }: FeatureRequestCardProps) {
-  const { user } = useAuth()
+  const { data: session } = useSession()
   const router = useRouter()
   const [upvotes, setUpvotes] = useState(request.upvotes)
   const [hasUpvoted, setHasUpvoted] = useState(request.hasUpvoted)
@@ -54,7 +55,7 @@ export function FeatureRequestCard({
   }
 
   const handleUpvote = async () => {
-    if (!user) {
+    if (!session) {
       router.push('/login')
       return
     }

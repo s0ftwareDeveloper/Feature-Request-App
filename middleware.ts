@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { verifyJWT } from "./lib/jwt"
+import { getToken } from "next-auth/jwt"
 
 export async function middleware(request: NextRequest) {
   // Paths that require authentication
@@ -19,36 +19,37 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const token = request.cookies.get("token")?.value
-  console.log("token", token)
+  try {
+    // Use NextAuth's getToken to verify the session
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET
+    })
 
-  if (!token) {
-    console.log("no token")
+    if (!token) {
+      if (request.nextUrl.pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+      return NextResponse.redirect(new URL("/login", request.url))
+    }
+
+    // Check admin access
+    if (isAdminPath && token.role !== "admin") {
+      if (request.nextUrl.pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+      }
+      return NextResponse.redirect(new URL("/", request.url))
+    }
+
+    return NextResponse.next()
+  } catch (error) {
+    console.error("Middleware error:", error)
+    // Handle token verification errors gracefully
     if (request.nextUrl.pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Authentication error" }, { status: 401 })
     }
     return NextResponse.redirect(new URL("/login", request.url))
   }
-
-  const payload = await verifyJWT(token)
-  console.log("payload", payload)
-  if (!payload) {
-    console.log("invalid token")
-    if (request.nextUrl.pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 })
-    }
-    return NextResponse.redirect(new URL("/login", request.url))
-  }
-
-  // Check admin access
-  if (isAdminPath && payload.role !== "admin") {
-    if (request.nextUrl.pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
-    }
-    return NextResponse.redirect(new URL("/", request.url))
-  }
-
-  return NextResponse.next()
 }
 
 export const config = {

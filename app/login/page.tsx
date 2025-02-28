@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/hooks/use-auth"
+import { signIn } from "next-auth/react"
 
 export default function Login() {
   const router = useRouter()
@@ -17,31 +18,42 @@ export default function Login() {
   const { login } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
-
-    const formData = new FormData(e.currentTarget)
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
-
+    
     try {
-      await login(email, password)
-      console.log("Login successful")
-      router.push("/")
-      router.refresh()
-    } catch (error: any) {
-      console.error("Login error:", error)
-      const errorMessage = error.response?.data || "Invalid email or password"
-      setError(errorMessage)
-      toast({
-        title: "Login Failed",
-        description: errorMessage,
-        variant: "destructive",
+      console.log("Attempting login with:", { email, password: "***" })
+      
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password
       })
-    } finally {
+      
+      console.log("Sign in result:", result)
+      
+      if (result?.error) {
+        setError("Invalid email or password")
+        setIsLoading(false)
+      } else {
+        toast({
+          title: "Login successful",
+          description: "Redirecting you to the homepage...",
+        })
+        
+        setTimeout(() => {
+          router.push("/")
+          router.refresh()
+        }, 500)
+      }
+    } catch (err) {
+      console.error("Login error:", err)
+      setError("An error occurred during login")
       setIsLoading(false)
     }
   }
@@ -62,6 +74,8 @@ export default function Login() {
             placeholder="m@example.com" 
             required 
             disabled={isLoading}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
         </div>
         <div className="space-y-2">
@@ -72,6 +86,8 @@ export default function Login() {
             type="password" 
             required 
             disabled={isLoading}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
         </div>
         {error && (

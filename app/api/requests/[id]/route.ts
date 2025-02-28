@@ -1,17 +1,17 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
-import { verifyJWT } from "@/lib/jwt"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = cookies().get("token")?.value
-    const payload = token ? await verifyJWT(token) : null
+    // Get session from NextAuth
+    const session = await getServerSession(authOptions)
 
-    if (!payload) {
+    if (!session?.user) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
@@ -27,11 +27,11 @@ export async function DELETE(
     }
 
     // Check if user is owner or admin
-    if (featureRequest.userId !== payload.id && payload.role !== "admin") {
+    if (featureRequest.userId !== session.user.id && session.user.role !== "admin") {
       return new NextResponse("Unauthorized", { status: 403 })
     }
 
-    // Delete related upvotes first (to maintain referential integrity)
+    // Delete related upvotes first
     await prisma.upvote.deleteMany({
       where: { requestId },
     })
@@ -56,8 +56,8 @@ export async function GET(
     const requestId = params.id
     
     // Get user from JWT token
-    const token = cookies().get("token")?.value
-    const payload = token ? await verifyJWT(token) : null
+    const session = await getServerSession(authOptions)
+    const userId = session?.user?.id
     
     // Fetch the feature request with upvote count
     const featureRequest = await prisma.featureRequest.findUnique({
@@ -66,9 +66,9 @@ export async function GET(
         _count: {
           select: { upvotes: true },
         },
-        upvotes: payload
+        upvotes: userId
           ? {
-              where: { userId: payload.id },
+              where: { userId },
             }
           : false,
       },
@@ -82,8 +82,8 @@ export async function GET(
     const formattedRequest = {
       ...featureRequest,
       upvotes: featureRequest._count.upvotes,
-      hasUpvoted: payload ? featureRequest.upvotes.length > 0 : false,
-      isOwner: payload ? featureRequest.userId === payload.id : false,
+      hasUpvoted: userId ? featureRequest.upvotes.length > 0 : false,
+      isOwner: userId ? featureRequest.userId === userId : false,
     }
 
     return NextResponse.json(formattedRequest)

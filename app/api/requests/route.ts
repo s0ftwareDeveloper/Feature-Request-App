@@ -1,22 +1,20 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
-import { sub } from "date-fns"
-import { cookies } from "next/headers"
-import { verifyJWT } from "@/lib/jwt"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 const ITEMS_PER_PAGE = 10
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url)
-    const status = searchParams.get("status")
-    const cursor = searchParams.get("cursor")
-    const limit = parseInt(searchParams.get("limit") || "10")
+    const url = new URL(request.url)
+    const page = parseInt(url.searchParams.get("page") || "0")
+    const status = url.searchParams.get("status") || undefined
+    const search = url.searchParams.get("search") || undefined
     
-    // Get user from JWT token
-    const token = cookies().get("token")?.value
-    const payload = token ? await verifyJWT(token) : null
-    const userId = payload?.id
+    // Get session from NextAuth
+    const session = await getServerSession(authOptions)
+    const userId = session?.user?.id
     
     // Build the query
     const where = {
@@ -26,8 +24,8 @@ export async function GET(request: Request) {
     // Fetch feature requests with pagination
     const requests = await prisma.featureRequest.findMany({
       where,
-      take: limit,
-      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+      take: ITEMS_PER_PAGE,
+      skip: page * ITEMS_PER_PAGE,
       orderBy: {
         upvotes: {
           _count: "desc",
@@ -54,7 +52,7 @@ export async function GET(request: Request) {
     }))
     
     // Get the next cursor
-    const nextCursor = requests.length === limit ? requests[requests.length - 1].id : null
+    const nextCursor = requests.length === ITEMS_PER_PAGE ? (page + 1) * ITEMS_PER_PAGE : null
     
     return NextResponse.json({
       requests: formattedRequests,
@@ -67,10 +65,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const token = cookies().get("token")?.value
-  const payload = token ? await verifyJWT(token) : null
-
-  if (!payload) {
+  // Get session from NextAuth instead of token
+  const session = await getServerSession(authOptions)
+  
+  if (!session?.user) {
     return new NextResponse("Unauthorized", { status: 401 })
   }
 
@@ -85,7 +83,7 @@ export async function POST(request: Request) {
     data: {
       title,
       description,
-      userId: payload.id,
+      userId: session.user.id,
     },
   })
 

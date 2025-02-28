@@ -1,13 +1,14 @@
+// This is a Server Component (no "use client" directive)
 import { FeatureRequestList } from "@/components/feature-request-list"
 import { FilterBar } from "@/components/filter-bar"
-import { cookies } from "next/headers"
-import { verifyJWT } from "@/lib/jwt"
-import { FeatureRequestCard } from "@/components/feature-request-card"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { SessionStatusClient } from "@/components/session-status-client"
 
 export default async function Home() {
-  const token = cookies().get("token")?.value
-  const payload = token ? await verifyJWT(token) : null
-  const isAdmin = payload?.role === "admin"
+  // Use getServerSession instead of JWT verification
+  const session = await getServerSession(authOptions)
+  const isAdmin = session?.user?.role === "admin"
 
   return (
     <div className="space-y-6">
@@ -17,6 +18,7 @@ export default async function Home() {
       </div>
       <FilterBar />
       <FeatureRequestList isAdmin={isAdmin} />
+      <SessionStatusClient />
     </div>
   )
 }
