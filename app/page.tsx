@@ -3,7 +3,7 @@ import { FeatureRequestList } from "@/components/feature-request-list"
 import { FilterBar } from "@/components/filter-bar"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
-import { SessionStatusClient } from "@/components/session-status-client"
+// import { SessionStatusClient } from "@/components/session-status-client"
 
 export default async function Home() {
   // Use getServerSession instead of JWT verification
@@ -18,7 +18,7 @@ export default async function Home() {
       </div>
       <FilterBar />
       <FeatureRequestList isAdmin={isAdmin} />
-      <SessionStatusClient />
+      {/* <SessionStatusClient /> */}
     </div>
   )
 }

@@ -1,18 +1,17 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
-import { verifyJWT } from "@/lib/jwt"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 export async function PATCH(
   request: Request, 
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verify admin access
-    const token = cookies().get("token")?.value
-    const payload = token ? await verifyJWT(token) : null
+    // Verify admin access using NextAuth
+    const session = await getServerSession(authOptions)
 
-    if (!payload || payload.role !== "admin") {
+    if (!session?.user || session.user.role !== "admin") {
       return new NextResponse("Unauthorized", { status: 403 })
     }
 
