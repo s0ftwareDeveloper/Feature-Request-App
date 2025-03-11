@@ -7,9 +7,4 @@ export const authOptions: AuthOptions = {
       return session
     }
   }
-}
-
-export const handlers = {
-  GET: () => {},
-  POST: () => {}
 } 

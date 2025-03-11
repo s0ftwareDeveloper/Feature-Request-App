@@ -1,39 +1,41 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { authOptions } from "@/app/api/auth/[...nextauth]/options"
 
 export async function PATCH(
   request: Request, 
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verify admin access using NextAuth
     const session = await getServerSession(authOptions)
-
-    if (!session?.user || session.user.role !== "admin") {
-      return new NextResponse("Unauthorized", { status: 403 })
+    
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
-
-    const requestId = params.id
+    
+    if (session.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+    }
+    
     const { status } = await request.json()
-
+    
     // Validate status
-    const validStatuses = ["pending", "planned", "completed"]
+    const validStatuses = ['pending', 'planned', 'completed', 'rejected']
     if (!validStatuses.includes(status)) {
-      return new NextResponse("Invalid status", { status: 400 })
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
-
-    // Update the feature request status
+    
+    // Update status in database
     const updatedRequest = await prisma.featureRequest.update({
-      where: { id: requestId },
-      data: { status },
+      where: { id: params.id },
+      data: { status }
     })
-
+    
     return NextResponse.json(updatedRequest)
   } catch (error) {
-    console.error("Error updating status:", error)
-    return new NextResponse("Internal server error", { status: 500 })
+    console.error('Error updating status:', error)
+    return NextResponse.json({ error: 'Error updating status' }, { status: 500 })
   }
 }
 
