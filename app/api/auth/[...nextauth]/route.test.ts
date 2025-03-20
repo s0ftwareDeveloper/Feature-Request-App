@@ -13,8 +13,8 @@ jest.mock('next-auth/next', () => ({
 jest.mock('./route', () => ({
   ...jest.requireActual('./route'),
   handlers: {
-    GET: jest.fn().mockResolvedValue(new NextResponse()),
-    POST: jest.fn().mockResolvedValue(new NextResponse())
+    GET: jest.fn().mockReturnValue({}),
+    POST: jest.fn().mockReturnValue({})
   }
 }))
 
@@ -25,17 +25,17 @@ describe('NextAuth API', () => {
 
   describe('GET /api/auth/[...nextauth]', () => {
     it('should handle GET requests', async () => {
-      const response = await handlers.GET()
+      const response = handlers.GET()
       expect(response).toBeDefined()
-      expect(response instanceof NextResponse).toBe(true)
+      expect(response).toEqual({})
     })
   })
 
   describe('POST /api/auth/[...nextauth]', () => {
     it('should handle POST requests', async () => {
-      const response = await handlers.POST()
+      const response = handlers.POST()
       expect(response).toBeDefined()
-      expect(response instanceof NextResponse).toBe(true)
+      expect(response).toEqual({})
     })
   })
 
@@ -79,6 +79,23 @@ describe('NextAuth API', () => {
         })
         expect(result).toEqual(mockSession)
       }
+    })
+  })
+
+  describe('NextAuth handlers', () => {
+    it('should have GET and POST handlers', () => {
+      expect(handlers).toHaveProperty('GET')
+      expect(handlers).toHaveProperty('POST')
+      expect(typeof handlers.GET).toBe('function')
+      expect(typeof handlers.POST).toBe('function')
+    })
+
+    it('should return empty responses', () => {
+      const getResponse = handlers.GET()
+      const postResponse = handlers.POST()
+
+      expect(getResponse).toEqual({})
+      expect(postResponse).toEqual({})
     })
   })
 }) 

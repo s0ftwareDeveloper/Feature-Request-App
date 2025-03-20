@@ -167,5 +167,57 @@ describe('Feature Request by ID API', () => {
 
       expect(response.status).toBe(500)
     })
+
+    it('should allow admin to delete any request', async () => {
+      // Mock the session with admin role
+      (getServerSession as jest.Mock).mockResolvedValue({
+        user: { id: 'admin-1', role: 'admin' }
+      })
+
+      // Mock finding the feature request
+      jest.spyOn(prisma.featureRequest, 'findUnique').mockResolvedValue({
+        id: 'request-1',
+        title: 'Test Request',
+        description: 'Test Description',
+        status: 'planned',
+        userId: 'user-1',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+
+      // Mock deleting upvotes
+      jest.spyOn(prisma.upvote, 'deleteMany').mockResolvedValue({ count: 1 })
+
+      // Mock deleting the feature request
+      jest.spyOn(prisma.featureRequest, 'delete').mockResolvedValue({
+        id: 'request-1',
+        title: 'Test Request',
+        description: 'Test Description',
+        status: 'planned',
+        userId: 'user-1',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+
+      const request = new Request('http://localhost:3000/api/requests/request-1', {
+        method: 'DELETE'
+      })
+
+      const response = await DELETE(request, { params: { id: 'request-1' } })
+      expect(response.status).toBe(200)
+      const data = await response.json()
+      expect(data.success).toBe(true)
+
+      // Verify that all operations were called
+      expect(prisma.featureRequest.findUnique).toHaveBeenCalledWith({
+        where: { id: 'request-1' }
+      })
+      expect(prisma.upvote.deleteMany).toHaveBeenCalledWith({
+        where: { requestId: 'request-1' }
+      })
+      expect(prisma.featureRequest.delete).toHaveBeenCalledWith({
+        where: { id: 'request-1' }
+      })
+    })
   })
 }) 
