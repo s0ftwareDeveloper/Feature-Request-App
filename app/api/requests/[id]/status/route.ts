@@ -11,7 +11,7 @@ export async function PATCH(
     const session = await getServerSession(authOptions)
     
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
     if (session.user.role !== 'admin') {
@@ -35,7 +35,7 @@ export async function PATCH(
     return NextResponse.json(updatedRequest)
   } catch (error) {
     console.error('Error updating status:', error)
-    return NextResponse.json({ error: 'Error updating status' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 

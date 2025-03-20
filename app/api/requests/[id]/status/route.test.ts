@@ -82,6 +82,8 @@ describe('PATCH /api/requests/[id]/status', () => {
 
     const response = await PATCH(request, { params: { id: 'request-1' } })
     expect(response.status).toBe(403)
+    const data = await response.json()
+    expect(data.error).toBe('Admin access required')
   })
 
   it('should return 401 when no session exists', async () => {
@@ -93,7 +95,9 @@ describe('PATCH /api/requests/[id]/status', () => {
     })
 
     const response = await PATCH(request, { params: { id: 'request-1' } })
-    expect(response.status).toBe(403)
+    expect(response.status).toBe(401)
+    const data = await response.json()
+    expect(data.error).toBe('Unauthorized')
   })
 
   it('should return 400 when invalid status is provided', async () => {
@@ -106,6 +110,8 @@ describe('PATCH /api/requests/[id]/status', () => {
 
     const response = await PATCH(request, { params: { id: 'request-1' } })
     expect(response.status).toBe(400)
+    const data = await response.json()
+    expect(data.error).toBe('Invalid status')
   })
 
   it('should return 500 when database update fails', async () => {
@@ -119,5 +125,7 @@ describe('PATCH /api/requests/[id]/status', () => {
 
     const response = await PATCH(request, { params: { id: 'request-1' } })
     expect(response.status).toBe(500)
+    const data = await response.json()
+    expect(data.error).toBe('Internal server error')
   })
 }) 

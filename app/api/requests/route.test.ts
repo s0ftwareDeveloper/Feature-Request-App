@@ -130,6 +130,108 @@ describe('Feature Requests API', () => {
 
       expect(response.status).toBe(500)
     })
+
+    it('should handle pagination parameters', async () => {
+      (getServerSession as jest.Mock).mockResolvedValue(mockSession)
+      ;(require('@/lib/prisma').prisma.featureRequest.count as jest.Mock).mockResolvedValue(25)
+      ;(require('@/lib/prisma').prisma.featureRequest.findMany as jest.Mock).mockResolvedValue(mockRequests)
+
+      const request = new Request('http://localhost:3000/api/requests?page=2', {
+        method: 'GET'
+      })
+
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.total).toBe(25)
+      expect(require('@/lib/prisma').prisma.featureRequest.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 10,
+          take: 10
+        })
+      )
+    })
+
+    it('should handle status filter', async () => {
+      (getServerSession as jest.Mock).mockResolvedValue(mockSession)
+      ;(require('@/lib/prisma').prisma.featureRequest.count as jest.Mock).mockResolvedValue(10)
+      ;(require('@/lib/prisma').prisma.featureRequest.findMany as jest.Mock).mockResolvedValue(mockRequests)
+
+      const request = new Request('http://localhost:3000/api/requests?status=pending', {
+        method: 'GET'
+      })
+
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(require('@/lib/prisma').prisma.featureRequest.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            status: 'pending'
+          }
+        })
+      )
+    })
+
+    it('should handle search parameter', async () => {
+      (getServerSession as jest.Mock).mockResolvedValue(mockSession)
+      ;(require('@/lib/prisma').prisma.featureRequest.count as jest.Mock).mockResolvedValue(10)
+      ;(require('@/lib/prisma').prisma.featureRequest.findMany as jest.Mock).mockResolvedValue(mockRequests)
+
+      const request = new Request('http://localhost:3000/api/requests?search=test', {
+        method: 'GET'
+      })
+
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(require('@/lib/prisma').prisma.featureRequest.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            OR: [
+              { title: { contains: 'test', mode: 'insensitive' } },
+              { description: { contains: 'test', mode: 'insensitive' } }
+            ]
+          }
+        })
+      )
+    })
+
+    it('should handle invalid page parameter', async () => {
+      (getServerSession as jest.Mock).mockResolvedValue(mockSession)
+      ;(require('@/lib/prisma').prisma.featureRequest.count as jest.Mock).mockResolvedValue(10)
+      ;(require('@/lib/prisma').prisma.featureRequest.findMany as jest.Mock).mockResolvedValue(mockRequests)
+
+      const request = new Request('http://localhost:3000/api/requests?page=invalid', {
+        method: 'GET'
+      })
+
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.requests).toHaveLength(2)
+    })
+
+    it('should handle empty search results', async () => {
+      (getServerSession as jest.Mock).mockResolvedValue(mockSession)
+      ;(require('@/lib/prisma').prisma.featureRequest.count as jest.Mock).mockResolvedValue(0)
+      ;(require('@/lib/prisma').prisma.featureRequest.findMany as jest.Mock).mockResolvedValue([])
+
+      const request = new Request('http://localhost:3000/api/requests', {
+        method: 'GET'
+      })
+
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.requests).toHaveLength(0)
+      expect(data.total).toBe(0)
+    })
   })
 
   describe('POST /api/requests', () => {
@@ -189,61 +291,61 @@ describe('Feature Requests API', () => {
     })
 
     it('should return 400 when title is missing', async () => {
-      (getServerSession as jest.Mock).mockResolvedValueOnce(mockSession)
-
       const request = new Request('http://localhost:3000/api/requests', {
         method: 'POST',
-        body: JSON.stringify({ description: 'Test' })
+        body: JSON.stringify({ description: 'Test description' })
       })
 
       const response = await POST(request)
       expect(response.status).toBe(400)
+      const data = await response.json()
+      expect(data.error).toBe('Missing required fields')
     })
 
     it('should return 400 when description is missing', async () => {
-      (getServerSession as jest.Mock).mockResolvedValueOnce(mockSession)
-
       const request = new Request('http://localhost:3000/api/requests', {
         method: 'POST',
-        body: JSON.stringify({ title: 'Test' })
+        body: JSON.stringify({ title: 'Test title' })
       })
 
       const response = await POST(request)
       expect(response.status).toBe(400)
+      const data = await response.json()
+      expect(data.error).toBe('Missing required fields')
     })
 
     it('should return 400 when title exceeds maximum length', async () => {
-      (getServerSession as jest.Mock).mockResolvedValueOnce(mockSession)
-
       const request = new Request('http://localhost:3000/api/requests', {
         method: 'POST',
         body: JSON.stringify({
           title: 'a'.repeat(101),
-          description: 'Test'
+          description: 'Test description'
         })
       })
 
       const response = await POST(request)
       expect(response.status).toBe(400)
+      const data = await response.json()
+      expect(data.error).toBe('Title exceeds maximum length')
     })
 
     it('should return 400 when description exceeds maximum length', async () => {
-      (getServerSession as jest.Mock).mockResolvedValueOnce(mockSession)
-
       const request = new Request('http://localhost:3000/api/requests', {
         method: 'POST',
         body: JSON.stringify({
-          title: 'Test',
+          title: 'Test title',
           description: 'a'.repeat(501)
         })
       })
 
       const response = await POST(request)
       expect(response.status).toBe(400)
+      const data = await response.json()
+      expect(data.error).toBe('Description exceeds maximum length')
     })
 
     it('should handle database errors gracefully', async () => {
-      (getServerSession as jest.Mock).mockResolvedValueOnce(mockSession)
+      (getServerSession as jest.Mock).mockResolvedValue(mockSession)
       jest.spyOn(prisma.featureRequest, 'create').mockRejectedValue(new Error('Database error'))
 
       const request = new Request('http://localhost:3000/api/requests', {

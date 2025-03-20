@@ -21,6 +21,12 @@ export async function GET(request: Request) {
     // Build the query
     const where = {
       ...(status ? { status } : {}),
+      ...(search ? {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
+        ]
+      } : {})
     }
     
     // Get total count
@@ -52,7 +58,7 @@ export async function GET(request: Request) {
     const formattedRequests = requests.map(request => ({
       ...request,
       upvotes: request._count.upvotes,
-      hasUpvoted: userId ? request.upvotes.length > 0 : false,
+      hasUpvoted: userId ? (request.upvotes?.length ?? 0) > 0 : false,
       isOwner: userId ? request.userId === userId : false,
     }))
     
@@ -62,7 +68,7 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error("Error fetching feature requests:", error)
-    return new NextResponse("Internal server error", { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
@@ -72,23 +78,23 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions)
     
     if (!session?.user) {
-      return new NextResponse("Unauthorized", { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const json = await request.json()
     const { title, description } = json
 
     if (!title || !description) {
-      return new NextResponse("Missing required fields", { status: 400 })
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
     // Validate field lengths
     if (title.length > MAX_TITLE_LENGTH) {
-      return new NextResponse("Title exceeds maximum length", { status: 400 })
+      return NextResponse.json({ error: "Title exceeds maximum length" }, { status: 400 })
     }
 
     if (description.length > MAX_DESCRIPTION_LENGTH) {
-      return new NextResponse("Description exceeds maximum length", { status: 400 })
+      return NextResponse.json({ error: "Description exceeds maximum length" }, { status: 400 })
     }
 
     const featureRequest = await prisma.featureRequest.create({
@@ -103,7 +109,7 @@ export async function POST(request: Request) {
     return NextResponse.json(featureRequest, { status: 201 })
   } catch (error) {
     console.error("Error creating feature request:", error)
-    return new NextResponse("Internal server error", { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 

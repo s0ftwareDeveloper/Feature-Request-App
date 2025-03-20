@@ -10,10 +10,15 @@ export async function POST(
 ) {
   try {
     const token = cookies().get("token")?.value
-    const payload = token ? await verifyJWT(token) : null
+    let payload = null
+    try {
+      payload = token ? await verifyJWT(token) : null
+    } catch (error) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
     if (!payload) {
-      return new NextResponse("Unauthorized", { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const requestId = params.id
@@ -24,7 +29,7 @@ export async function POST(
     })
 
     if (!featureRequest) {
-      return new NextResponse("Feature request not found", { status: 404 })
+      return NextResponse.json({ error: "Feature request not found" }, { status: 404 })
     }
 
     // Create upvote if it doesn't exist
@@ -39,11 +44,11 @@ export async function POST(
   } catch (error: any) {
     // Handle unique constraint violation (user already upvoted)
     if (error.code === 'P2002') {
-      return new NextResponse("You have already upvoted this request", { status: 400 })
+      return NextResponse.json({ error: "You have already upvoted this request" }, { status: 400 })
     }
     
     console.error("Upvote error:", error)
-    return new NextResponse("Internal server error", { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
@@ -54,10 +59,15 @@ export async function DELETE(
 ) {
   try {
     const token = cookies().get("token")?.value
-    const payload = token ? await verifyJWT(token) : null
+    let payload = null
+    try {
+      payload = token ? await verifyJWT(token) : null
+    } catch (error) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
     if (!payload) {
-      return new NextResponse("Unauthorized", { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const requestId = params.id
@@ -90,6 +100,6 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Remove upvote error:", error)
-    return new NextResponse("Internal server error", { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 } 
