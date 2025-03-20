@@ -6,13 +6,27 @@ import { authOptions } from "../auth/[...nextauth]/options"
 const ITEMS_PER_PAGE = 10
 const MAX_TITLE_LENGTH = 100
 const MAX_DESCRIPTION_LENGTH = 500
+const VALID_STATUSES = ['pending', 'planned', 'completed', 'rejected']
 
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
-    const page = parseInt(url.searchParams.get("page") || "1") - 1 // Convert to 0-based index
-    const status = url.searchParams.get("status") || undefined
-    const search = url.searchParams.get("search") || undefined
+    const pageStr = url.searchParams.get("page")
+    const limitStr = url.searchParams.get("limit")
+    const status = url.searchParams.get("status")
+    const search = url.searchParams.get("search")
+
+    // Validate pagination parameters
+    let page = pageStr ? parseInt(pageStr) : 1
+    let limit = limitStr ? parseInt(limitStr) : ITEMS_PER_PAGE
+
+    if (isNaN(page) || page < 1) page = 1
+    if (isNaN(limit) || limit < 1) limit = ITEMS_PER_PAGE
+
+    // Validate status if provided
+    if (status && !VALID_STATUSES.includes(status)) {
+      return NextResponse.json({ error: "Invalid status parameter" }, { status: 400 })
+    }
     
     // Get session from NextAuth
     const session = await getServerSession(authOptions)
@@ -31,12 +45,13 @@ export async function GET(request: Request) {
     
     // Get total count
     const total = await prisma.featureRequest.count({ where })
+    const totalPages = Math.ceil(total / limit)
     
     // Fetch feature requests with pagination
     const requests = await prisma.featureRequest.findMany({
       where,
-      take: ITEMS_PER_PAGE,
-      skip: page * ITEMS_PER_PAGE,
+      take: limit,
+      skip: (page - 1) * limit,
       orderBy: {
         upvotes: {
           _count: "desc",
@@ -65,6 +80,9 @@ export async function GET(request: Request) {
     return NextResponse.json({
       requests: formattedRequests,
       total,
+      currentPage: page,
+      totalPages,
+      itemsPerPage: limit
     })
   } catch (error) {
     console.error("Error fetching feature requests:", error)

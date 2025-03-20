@@ -114,6 +114,49 @@ describe('PATCH /api/requests/[id]/status', () => {
     expect(data.error).toBe('Invalid status')
   })
 
+  it('should return 400 when request body is missing status', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(mockSession)
+
+    const request = new Request('http://localhost:3000/api/requests/request-1/status', {
+      method: 'PATCH',
+      body: JSON.stringify({})
+    })
+
+    const response = await PATCH(request, { params: { id: 'request-1' } })
+    expect(response.status).toBe(400)
+    const data = await response.json()
+    expect(data.error).toBe('Status is required')
+  })
+
+  it('should return 400 when request body is malformed JSON', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(mockSession)
+
+    const request = new Request('http://localhost:3000/api/requests/request-1/status', {
+      method: 'PATCH',
+      body: 'invalid-json{'
+    })
+
+    const response = await PATCH(request, { params: { id: 'request-1' } })
+    expect(response.status).toBe(400)
+    const data = await response.json()
+    expect(data.error).toBe('Invalid request body')
+  })
+
+  it('should return 404 when feature request does not exist', async () => {
+    (getServerSession as jest.Mock).mockResolvedValue(mockSession)
+    jest.spyOn(prisma.featureRequest, 'update').mockRejectedValue({ code: 'P2025' })
+
+    const request = new Request('http://localhost:3000/api/requests/nonexistent-id/status', {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'planned' })
+    })
+
+    const response = await PATCH(request, { params: { id: 'nonexistent-id' } })
+    expect(response.status).toBe(404)
+    const data = await response.json()
+    expect(data.error).toBe('Feature request not found')
+  })
+
   it('should return 500 when database update fails', async () => {
     (getServerSession as jest.Mock).mockResolvedValue(mockSession)
     jest.spyOn(prisma.featureRequest, 'update').mockRejectedValue(new Error('Database error'))

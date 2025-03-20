@@ -232,6 +232,106 @@ describe('Feature Requests API', () => {
       expect(data.requests).toHaveLength(0)
       expect(data.total).toBe(0)
     })
+
+    it('should handle pagination correctly', async () => {
+      (getServerSession as jest.Mock).mockResolvedValue(mockSession)
+      jest.spyOn(prisma.featureRequest, 'findMany').mockResolvedValue([mockRequests[0]])
+      jest.spyOn(prisma.featureRequest, 'count').mockResolvedValue(2)
+
+      const request = new Request('http://localhost:3000/api/requests?page=1&limit=1')
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.requests).toHaveLength(1)
+      expect(data.totalPages).toBe(2)
+      expect(data.currentPage).toBe(1)
+      expect(prisma.featureRequest.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          take: 1,
+          skip: 0
+        })
+      )
+    })
+
+    it('should handle invalid pagination parameters', async () => {
+      (getServerSession as jest.Mock).mockResolvedValue(mockSession)
+      jest.spyOn(prisma.featureRequest, 'findMany').mockResolvedValue(mockRequests)
+      jest.spyOn(prisma.featureRequest, 'count').mockResolvedValue(2)
+
+      const request = new Request('http://localhost:3000/api/requests?page=invalid&limit=invalid')
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.currentPage).toBe(1)
+      expect(data.itemsPerPage).toBe(10)
+      expect(prisma.featureRequest.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 0,
+          take: 10
+        })
+      )
+    })
+
+    it('should handle status filtering', async () => {
+      (getServerSession as jest.Mock).mockResolvedValue(mockSession)
+      jest.spyOn(prisma.featureRequest, 'findMany').mockResolvedValue([mockRequests[1]])
+      jest.spyOn(prisma.featureRequest, 'count').mockResolvedValue(1)
+
+      const request = new Request('http://localhost:3000/api/requests?status=planned')
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.requests).toHaveLength(1)
+      expect(data.requests[0].status).toBe('planned')
+      expect(prisma.featureRequest.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: 'planned'
+          })
+        })
+      )
+    })
+
+    it('should handle invalid status filter', async () => {
+      (getServerSession as jest.Mock).mockResolvedValue(mockSession)
+
+      const request = new Request('http://localhost:3000/api/requests?status=invalid')
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.error).toBe('Invalid status parameter')
+    })
+
+    it('should handle search by title', async () => {
+      (getServerSession as jest.Mock).mockResolvedValue(mockSession)
+      jest.spyOn(prisma.featureRequest, 'findMany').mockResolvedValue([mockRequests[0]])
+      jest.spyOn(prisma.featureRequest, 'count').mockResolvedValue(1)
+
+      const request = new Request('http://localhost:3000/api/requests?search=Test', {
+        method: 'GET'
+      })
+
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.requests).toHaveLength(1)
+      expect(data.requests[0].title).toBe('Test Request 1')
+      expect(prisma.featureRequest.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: [
+              { title: { contains: 'Test', mode: 'insensitive' } },
+              { description: { contains: 'Test', mode: 'insensitive' } }
+            ]
+          })
+        })
+      )
+    })
   })
 
   describe('POST /api/requests', () => {
