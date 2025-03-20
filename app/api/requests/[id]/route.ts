@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { authOptions } from "../../auth/[...nextauth]/options"
 
 export async function DELETE(
   request: Request,
@@ -64,14 +64,9 @@ export async function GET(
       where: { id: requestId },
       include: {
         _count: {
-          select: { upvotes: true },
-        },
-        upvotes: userId
-          ? {
-              where: { userId },
-            }
-          : false,
-      },
+          select: { upvotes: true }
+        }
+      }
     })
 
     if (!featureRequest) {

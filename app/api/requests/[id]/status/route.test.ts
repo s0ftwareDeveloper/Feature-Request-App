@@ -44,8 +44,8 @@ describe('PATCH /api/requests/[id]/status', () => {
     description: 'Test Description',
     status: 'planned',
     userId: 'user-1',
-    createdAt: '2023-01-01T00:00:00.000Z',
-    updatedAt: '2023-01-01T00:00:00.000Z'
+    createdAt: new Date('2023-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2023-01-01T00:00:00.000Z')
   }
 
   it('should update status when admin makes valid request', async () => {
