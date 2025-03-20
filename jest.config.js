@@ -6,17 +6,23 @@ const createJestConfig = nextJest({
 
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  moduleDirectories: ['node_modules', '<rootDir>/'],
   testEnvironment: 'jest-environment-node',
   moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/$1',
     '^@/app/(.*)$': '<rootDir>/app/$1',
-    '^@/lib/(.*)$': '<rootDir>/app/lib/$1',
-    '^@/(.*)$': '<rootDir>/app/$1'
+    '^@/lib/(.*)$': '<rootDir>/lib/$1',
+    '^../../../app/api/auth/\\[\\.\\.\\.nextauth\\]/route$': '<rootDir>/__mocks__/auth/[...nextauth]/route.ts',
+    '^../../app/api/auth/\\[\\.\\.\\.nextauth\\]/route$': '<rootDir>/__mocks__/auth/[...nextauth]/route.ts',
+    '^../../../app/api/auth/\\[\\.\\.\\.nextauth\\]/options$': '<rootDir>/__mocks__/auth/[...nextauth]/options.ts',
+    '^../../app/api/auth/\\[\\.\\.\\.nextauth\\]/options$': '<rootDir>/__mocks__/auth/[...nextauth]/options.ts'
   },
-  moduleDirectories: ['node_modules', '<rootDir>'],
-  testMatch: ['**/*.test.ts', '**/*.test.tsx'],
   collectCoverage: true,
   collectCoverageFrom: [
-    'app/api/requests/[id]/status/route.ts',
+    'app/api/**/*.ts',
+    '!**/*.d.ts',
+    '!**/node_modules/**',
+    '!**/__mocks__/**',
   ],
   coverageThreshold: {
     global: {
