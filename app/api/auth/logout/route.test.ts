@@ -33,8 +33,10 @@ describe('POST /api/auth/logout', () => {
     ;(cookies as jest.Mock).mockReturnValue({ delete: mockDelete })
 
     const response = await POST()
+    const data = await response.json()
+
     expect(response.status).toBe(500)
-    expect(await response.text()).toBe('Internal server error')
+    expect(data.message).toBe('Internal server error')
     expect(mockDelete).toHaveBeenCalledWith('token')
   })
 }) 

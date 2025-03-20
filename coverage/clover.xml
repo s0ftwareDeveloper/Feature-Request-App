@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1742490770555" clover="3.2.0">
-  <project timestamp="1742490770555" name="All files">
-    <metrics statements="221" coveredstatements="190" conditionals="66" coveredconditionals="54" methods="18" coveredmethods="13" elements="305" coveredelements="257" complexity="0" loc="221" ncloc="221" packages="11" files="12" classes="12"/>
+<coverage generated="1742490866938" clover="3.2.0">
+  <project timestamp="1742490866938" name="All files">
+    <metrics statements="224" coveredstatements="193" conditionals="66" coveredconditionals="54" methods="18" coveredmethods="13" elements="308" coveredelements="260" complexity="0" loc="224" ncloc="224" packages="11" files="12" classes="12"/>
     <package name="auth.[...nextauth]">
       <metrics statements="5" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="4" coveredmethods="1"/>
       <file name="options.ts" path="C:\Users\merli\Documents\AI Workshop\Feature-Request-App\app\api\auth\[...nextauth]\options.ts">
@@ -49,14 +49,17 @@
       </file>
     </package>
     <package name="auth.logout">
-      <metrics statements="5" coveredstatements="5" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+      <metrics statements="8" coveredstatements="8" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
       <file name="route.ts" path="C:\Users\merli\Documents\AI Workshop\Feature-Request-App\app\api\auth\logout\route.ts">
-        <metrics statements="5" coveredstatements="5" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <metrics statements="8" coveredstatements="8" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
         <line num="1" count="1" type="stmt"/>
         <line num="2" count="1" type="stmt"/>
         <line num="4" count="2" type="stmt"/>
-        <line num="6" count="2" type="stmt"/>
-        <line num="8" count="1" type="stmt"/>
+        <line num="5" count="2" type="stmt"/>
+        <line num="7" count="2" type="stmt"/>
+        <line num="9" count="1" type="stmt"/>
+        <line num="11" count="1" type="stmt"/>
+        <line num="12" count="1" type="stmt"/>
       </file>
     </package>
     <package name="auth.me">
