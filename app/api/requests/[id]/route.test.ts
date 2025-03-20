@@ -13,6 +13,9 @@ jest.mock('@/lib/prisma', () => ({
     featureRequest: {
       findUnique: jest.fn(),
       delete: jest.fn()
+    },
+    upvote: {
+      deleteMany: jest.fn()
     }
   }
 }))
@@ -88,21 +91,23 @@ describe('Feature Request by ID API', () => {
 
   describe('DELETE /api/requests/[id]', () => {
     it('should delete request when user is the owner', async () => {
-      // Use the imported function directly
-      (getServerSession as jest.Mock).mockResolvedValueOnce(mockSession)
-      
-      jest.spyOn(prisma.featureRequest, 'findUnique').mockResolvedValue(mockRequest)
-      jest.spyOn(prisma.featureRequest, 'delete').mockResolvedValue(mockRequest)
+      (getServerSession as jest.Mock).mockResolvedValue(mockSession)
+      ;(require('@/lib/prisma').prisma.featureRequest.findUnique as jest.Mock).mockResolvedValue(mockRequest)
+      ;(require('@/lib/prisma').prisma.featureRequest.delete as jest.Mock).mockResolvedValue(mockRequest)
+      ;(require('@/lib/prisma').prisma.upvote.deleteMany as jest.Mock).mockResolvedValue({ count: 1 })
 
       const request = new Request('http://localhost:3000/api/requests/request-1', {
         method: 'DELETE'
       })
-      
+
       const response = await DELETE(request, { params: { id: 'request-1' } })
 
       expect(response.status).toBe(200)
-      expect(prisma.featureRequest.delete).toHaveBeenCalledWith({
+      expect(require('@/lib/prisma').prisma.featureRequest.delete).toHaveBeenCalledWith({
         where: { id: 'request-1' }
+      })
+      expect(require('@/lib/prisma').prisma.upvote.deleteMany).toHaveBeenCalledWith({
+        where: { requestId: 'request-1' }
       })
     })
 
