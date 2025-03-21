@@ -10,6 +10,22 @@ export const authOptions: AuthOptions = {
 }
 
 export const handlers = {
-  GET: () => {},
-  POST: () => {}
+  GET: async (request: Request) => {
+    try {
+      // Process the request
+      return {}
+    } catch (error) {
+      console.error('NextAuth GET error:', error)
+      return {}
+    }
+  },
+  POST: async (request: Request) => {
+    try {
+      // Process the request
+      return {}
+    } catch (error) {
+      console.error('NextAuth POST error:', error)
+      return {}
+    }
+  }
 } 

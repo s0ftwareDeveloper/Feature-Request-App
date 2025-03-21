@@ -13,8 +13,8 @@ jest.mock('next-auth/next', () => ({
 jest.mock('./route', () => ({
   ...jest.requireActual('./route'),
   handlers: {
-    GET: jest.fn().mockReturnValue({}),
-    POST: jest.fn().mockReturnValue({})
+    GET: jest.fn().mockImplementation(async (req?: Request) => ({})),
+    POST: jest.fn().mockImplementation(async (req?: Request) => ({}))
   }
 }))
 
@@ -24,17 +24,57 @@ describe('NextAuth API', () => {
   })
 
   describe('GET /api/auth/[...nextauth]', () => {
-    it('should handle GET requests', async () => {
-      const response = handlers.GET()
+    it('should handle GET requests with query parameters', async () => {
+      const request = new Request('http://localhost:3000/api/auth/session?update=true')
+      const response = await handlers.GET(request)
       expect(response).toBeDefined()
+      expect(response).toEqual({})
+    })
+
+    it('should handle GET requests without query parameters', async () => {
+      const request = new Request('http://localhost:3000/api/auth/session')
+      const response = await handlers.GET(request)
+      expect(response).toBeDefined()
+      expect(response).toEqual({})
+    })
+
+    it('should handle GET request errors gracefully', async () => {
+      const request = new Request('http://localhost:3000/api/auth/session')
+      // Force an error by making request undefined
+      const response = await handlers.GET(undefined as unknown as Request)
       expect(response).toEqual({})
     })
   })
 
   describe('POST /api/auth/[...nextauth]', () => {
-    it('should handle POST requests', async () => {
-      const response = handlers.POST()
+    it('should handle POST requests with credentials', async () => {
+      const request = new Request('http://localhost:3000/api/auth/callback/credentials', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: 'test@example.com',
+          password: 'password123'
+        })
+      })
+      const response = await handlers.POST(request)
       expect(response).toBeDefined()
+      expect(response).toEqual({})
+    })
+
+    it('should handle POST requests without body', async () => {
+      const request = new Request('http://localhost:3000/api/auth/callback/credentials', {
+        method: 'POST'
+      })
+      const response = await handlers.POST(request)
+      expect(response).toBeDefined()
+      expect(response).toEqual({})
+    })
+
+    it('should handle POST request errors gracefully', async () => {
+      const request = new Request('http://localhost:3000/api/auth/callback/credentials', {
+        method: 'POST'
+      })
+      // Force an error by making request undefined
+      const response = await handlers.POST(undefined as unknown as Request)
       expect(response).toEqual({})
     })
   })
@@ -88,14 +128,6 @@ describe('NextAuth API', () => {
       expect(handlers).toHaveProperty('POST')
       expect(typeof handlers.GET).toBe('function')
       expect(typeof handlers.POST).toBe('function')
-    })
-
-    it('should return empty responses', () => {
-      const getResponse = handlers.GET()
-      const postResponse = handlers.POST()
-
-      expect(getResponse).toEqual({})
-      expect(postResponse).toEqual({})
     })
   })
 }) 

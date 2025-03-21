@@ -1,19 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1742509010256" clover="3.2.0">
-  <project timestamp="1742509010256" name="All files">
-    <metrics statements="221" coveredstatements="221" conditionals="74" coveredconditionals="70" methods="16" coveredmethods="14" elements="311" coveredelements="305" complexity="0" loc="221" ncloc="221" packages="9" files="10" classes="10"/>
+<coverage generated="1742516455963" clover="3.2.0">
+  <project timestamp="1742516455963" name="All files">
+    <metrics statements="229" coveredstatements="221" conditionals="74" coveredconditionals="70" methods="16" coveredmethods="14" elements="319" coveredelements="305" complexity="0" loc="229" ncloc="229" packages="9" files="10" classes="10"/>
     <package name="auth.[...nextauth]">
-      <metrics statements="5" coveredstatements="5" conditionals="0" coveredconditionals="0" methods="4" coveredmethods="2"/>
+      <metrics statements="13" coveredstatements="5" conditionals="0" coveredconditionals="0" methods="4" coveredmethods="2"/>
       <file name="options.ts" path="C:\Users\merli\Documents\AI Workshop\Feature-Request-App\app\api\auth\[...nextauth]\options.ts">
         <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
         <line num="3" count="17" type="stmt"/>
         <line num="7" count="2" type="stmt"/>
       </file>
       <file name="route.ts" path="C:\Users\merli\Documents\AI Workshop\Feature-Request-App\app\api\auth\[...nextauth]\route.ts">
-        <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="3" coveredmethods="1"/>
+        <metrics statements="11" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="3" coveredmethods="1"/>
         <line num="3" count="1" type="stmt"/>
         <line num="7" count="1" type="stmt"/>
         <line num="12" count="1" type="stmt"/>
+        <line num="14" count="0" type="stmt"/>
+        <line num="16" count="0" type="stmt"/>
+        <line num="18" count="0" type="stmt"/>
+        <line num="19" count="0" type="stmt"/>
+        <line num="23" count="0" type="stmt"/>
+        <line num="25" count="0" type="stmt"/>
+        <line num="27" count="0" type="stmt"/>
+        <line num="28" count="0" type="stmt"/>
       </file>
     </package>
     <package name="auth.login">
