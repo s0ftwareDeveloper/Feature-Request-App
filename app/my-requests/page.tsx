@@ -1,22 +1,23 @@
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { FeatureRequestCard } from "@/components/feature-request-card"
-import { cookies } from "next/headers"
-import { verifyJWT } from "@/lib/jwt"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/app/api/auth/[...nextauth]/options"
 
 export default async function MyRequests() {
-  const token = cookies().get("token")?.value
-  const payload = token ? await verifyJWT(token) : null
+  // Get session from NextAuth instead of JWT
+  const session = await getServerSession(authOptions)
 
-  if (!payload) {
+  if (!session?.user) {
     redirect("/login")
   }
 
-  const isAdmin = payload.role === "admin"
+  const userId = session.user.id
+  const isAdmin = session.user.role === "admin"
 
   const requests = await prisma.featureRequest.findMany({
     where: {
-      userId: payload.id,
+      userId,
     },
     orderBy: {
       createdAt: "desc",
@@ -26,13 +27,15 @@ export default async function MyRequests() {
         select: { upvotes: true },
       },
       upvotes: {
-        where: { userId: payload.id },
+        where: { userId },
       },
     },
   })
 
   const formattedRequests = requests.map((request) => ({
     ...request,
+    createdAt: request.createdAt.toISOString(),
+    updatedAt: request.updatedAt.toISOString(),
     upvotes: request._count.upvotes,
     hasUpvoted: request.upvotes.length > 0,
     isOwner: true,

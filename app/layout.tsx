@@ -8,7 +8,7 @@ import { Header } from "@/components/header"
 import { AuthProvider } from "@/components/auth-provider"
 import { headers } from "next/headers"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { authOptions } from "@/app/api/auth/[...nextauth]/options"
 import { Providers } from "@/components/providers"
 
 const inter = Inter({ subsets: ["latin"] })

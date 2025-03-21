@@ -1,6 +1,6 @@
 import { create } from "zustand"
-import { persist, createJSONStorage } from "zustand/middleware"
-import api from "@/lib/axios"
+import { persist } from "zustand/middleware"
+import { signIn, signOut, useSession } from "next-auth/react"
 
 type User = {
   id: string
@@ -9,53 +9,45 @@ type User = {
 }
 
 type AuthState = {
-  user: User | null
-  isInitialized: boolean
   checkAuth: () => Promise<void>
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<boolean>
   logout: () => Promise<void>
 }
 
 export const useAuth = create<AuthState>()(
   persist(
     (set) => ({
-      user: null,
-      isInitialized: false,
       checkAuth: async () => {
-        try {
-          const { data } = await api.get("/auth/me")
-          set({ user: data.user, isInitialized: true })
-        } catch (error) {
-          console.error("Auth check error:", error)
-          set({ user: null, isInitialized: true })
-        }
+        // Next-auth handles this through the SessionProvider
       },
       login: async (email: string, password: string) => {
         try {
-          const { data } = await api.post("/auth/login", { email, password })
-          set({ user: data.user, isInitialized: true })
-          // Use Next.js router instead of window.location
-          window.location.href = "/"
+          const result = await signIn("credentials", {
+            redirect: false,
+            email,
+            password,
+          })
+          
+          return !result?.error
         } catch (error: any) {
-          console.error("Login error:", error.response?.data || error.message)
-          throw error
+          console.error("Login error:", error)
+          return false
         }
       },
       logout: async () => {
-        try {
-          await api.post("/auth/logout")
-          set({ user: null, isInitialized: true })
-          window.location.href = "/"
-        } catch (error) {
-          console.error("Logout error:", error)
-        }
+        await signOut({ callbackUrl: "/" })
       },
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ user: state.user }),
+      partialize: (state) => ({}), // Don't persist any state, let NextAuth handle it
     }
   )
 )
+
+// Helper hook to get current user from NextAuth session
+export const useCurrentUser = () => {
+  const { data: session } = useSession()
+  return session?.user as User | null
+}
 

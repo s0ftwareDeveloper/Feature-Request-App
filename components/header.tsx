@@ -3,10 +3,15 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { PlusCircle } from "lucide-react"
-import { useAuth } from "@/hooks/use-auth"
+import { useSession, signOut } from "next-auth/react"
 
 export function Header() {
-  const { user, logout } = useAuth()
+  const { data: session } = useSession()
+  const user = session?.user
+
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: "/" })
+  }
 
   return (
     <header className="border-b">
@@ -35,7 +40,7 @@ export function Header() {
                   New Request
                 </Link>
               </Button>
-              <Button variant="ghost" onClick={logout}>
+              <Button variant="ghost" onClick={handleLogout}>
                 Log Out
               </Button>
             </>

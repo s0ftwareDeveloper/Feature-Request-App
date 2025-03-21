@@ -1,59 +1,63 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
-import { useAuth } from "@/hooks/use-auth"
 import { signIn } from "next-auth/react"
 
 export default function Login() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
-  const { login } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+
+  // Check for error parameter in URL (from NextAuth)
+  const error = searchParams.get("error")
+  const errorMessage = error === "AuthenticationError" ? 
+    "Invalid email or password" : 
+    error ? `Authentication error: ${error}` : ""
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setError("")
     
     try {
-      console.log("Attempting login with:", { email, password: "***" })
-      
       const result = await signIn("credentials", {
         redirect: false,
         email,
         password
       })
       
-      console.log("Sign in result:", result)
-      
       if (result?.error) {
-        setError("Invalid email or password")
+        toast({
+          title: "Login failed",
+          description: "Invalid email or password",
+          variant: "destructive"
+        })
         setIsLoading(false)
       } else {
         toast({
           title: "Login successful",
-          description: "Redirecting you to the homepage...",
+          description: "Redirecting you to the homepage..."
         })
         
-        setTimeout(() => {
-          router.push("/")
-          router.refresh()
-        }, 500)
+        router.push("/")
+        router.refresh()
       }
     } catch (err) {
       console.error("Login error:", err)
-      setError("An error occurred during login")
+      toast({
+        title: "Login error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      })
       setIsLoading(false)
     }
   }
@@ -90,9 +94,9 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        {error && (
+        {errorMessage && (
           <div className="text-sm text-destructive">
-            {error}
+            {errorMessage}
           </div>
         )}
         <Button className="w-full" type="submit" disabled={isLoading}>
