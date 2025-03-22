@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
-import { verifyJWT } from "@/lib/jwt"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/app/api/auth/[...nextauth]/options"
 
 // Handle upvote creation
 export async function POST(
@@ -9,18 +9,14 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = cookies().get("token")?.value
-    let payload = null
-    try {
-      payload = token ? await verifyJWT(token) : null
-    } catch (error) {
+    // Get session from NextAuth instead of JWT token
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
+    const userId = session.user.id
     const requestId = params.id
     
     // Check if the feature request exists
@@ -35,7 +31,7 @@ export async function POST(
     // Create upvote if it doesn't exist
     const upvote = await prisma.upvote.create({
       data: {
-        userId: payload.id,
+        userId,
         requestId,
       },
     })
@@ -58,25 +54,21 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = cookies().get("token")?.value
-    let payload = null
-    try {
-      payload = token ? await verifyJWT(token) : null
-    } catch (error) {
+    // Get session from NextAuth instead of JWT token
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
+    const userId = session.user.id
     const requestId = params.id
 
     // First check if the upvote exists
     const existingUpvote = await prisma.upvote.findUnique({
       where: {
         userId_requestId: {
-          userId: payload.id,
+          userId,
           requestId,
         },
       },
@@ -91,7 +83,7 @@ export async function DELETE(
     await prisma.upvote.delete({
       where: {
         userId_requestId: {
-          userId: payload.id,
+          userId,
           requestId,
         },
       },

@@ -55,17 +55,20 @@ export async function GET(
   try {
     const requestId = params.id
     
-    // Get user from JWT token
+    // Get user from NextAuth session
     const session = await getServerSession(authOptions)
     const userId = session?.user?.id
     
-    // Fetch the feature request with upvote count
+    // Fetch the feature request with upvote count and user's upvote status
     const featureRequest = await prisma.featureRequest.findUnique({
       where: { id: requestId },
       include: {
         _count: {
           select: { upvotes: true }
-        }
+        },
+        upvotes: userId ? {
+          where: { userId },
+        } : false,
       }
     })
 
@@ -77,7 +80,7 @@ export async function GET(
     const formattedRequest = {
       ...featureRequest,
       upvotes: featureRequest._count.upvotes,
-      hasUpvoted: userId ? featureRequest.upvotes.length > 0 : false,
+      hasUpvoted: userId ? (featureRequest.upvotes && 'length' in featureRequest.upvotes ? featureRequest.upvotes.length > 0 : false) : false,
       isOwner: userId ? featureRequest.userId === userId : false,
     }
 

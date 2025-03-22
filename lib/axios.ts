@@ -5,17 +5,12 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // Important for cookies
+  withCredentials: true, // Important for cookies and NextAuth sessions
 })
 
-// Add auth token to requests
-api.interceptors.request.use((config) => {
-  const token = document.cookie.replace(/(?:(?:^|.*;\s*)token\s*=\s*([^;]*).*$)|^.*$/, "$1")
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+// No need to manually add auth token headers
+// NextAuth.js session cookie will automatically be included with requests
+// because of withCredentials: true
 
 export default api
 

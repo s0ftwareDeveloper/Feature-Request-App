@@ -2,11 +2,13 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "../auth/[...nextauth]/options"
+import { subDays, subWeeks, subMonths } from 'date-fns'
 
 const ITEMS_PER_PAGE = 10
 const MAX_TITLE_LENGTH = 100
 const MAX_DESCRIPTION_LENGTH = 500
 const VALID_STATUSES = ['pending', 'planned', 'completed', 'rejected']
+const VALID_DATE_FILTERS = ['day', 'week', 'month']
 
 export async function GET(request: Request) {
   try {
@@ -14,6 +16,7 @@ export async function GET(request: Request) {
     const pageStr = url.searchParams.get("page")
     const limitStr = url.searchParams.get("limit")
     const status = url.searchParams.get("status")
+    const date = url.searchParams.get("date")
     const search = url.searchParams.get("search")
 
     // Validate pagination parameters
@@ -27,13 +30,18 @@ export async function GET(request: Request) {
     if (status && !VALID_STATUSES.includes(status)) {
       return NextResponse.json({ error: "Invalid status parameter" }, { status: 400 })
     }
+
+    // Validate date filter if provided
+    if (date && !VALID_DATE_FILTERS.includes(date)) {
+      return NextResponse.json({ error: "Invalid date parameter" }, { status: 400 })
+    }
     
     // Get session from NextAuth
     const session = await getServerSession(authOptions)
     const userId = session?.user?.id
     
-    // Build the query
-    const where = {
+    // Build the base query
+    const where: any = {
       ...(status ? { status } : {}),
       ...(search ? {
         OR: [
@@ -41,6 +49,30 @@ export async function GET(request: Request) {
           { description: { contains: search, mode: 'insensitive' } }
         ]
       } : {})
+    }
+
+    // Add date filtering
+    if (date) {
+      let dateFilter: Date;
+      const now = new Date();
+      
+      switch (date) {
+        case 'day':
+          dateFilter = subDays(now, 1);
+          break;
+        case 'week':
+          dateFilter = subWeeks(now, 1);
+          break;
+        case 'month':
+          dateFilter = subMonths(now, 1);
+          break;
+        default:
+          dateFilter = new Date(0); // Beginning of time if somehow an invalid value gets through
+      }
+      
+      where.createdAt = {
+        gte: dateFilter
+      };
     }
     
     // Get total count
