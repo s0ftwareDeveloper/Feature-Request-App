@@ -140,7 +140,7 @@ export function FeatureRequestCard({
   }
 
   return (
-    <Card className="card-hover border-muted/40 overflow-hidden shadow-sm flex flex-col h-full">
+    <Card className="card-hover border-border overflow-hidden shadow flex flex-col h-full">
       <CardHeader className="pb-2 space-y-2">
         <div className="flex justify-between items-start gap-2">
           <CardTitle className="text-xl font-medium">{request.title}</CardTitle>
@@ -156,7 +156,7 @@ export function FeatureRequestCard({
       <CardContent className="pb-6 flex-grow">
         <p className="text-muted-foreground/90 leading-relaxed">{request.description}</p>
       </CardContent>
-      <CardFooter className="flex flex-wrap justify-between py-2 border-t border-muted/30 mt-auto gap-2">
+      <CardFooter className="flex flex-wrap justify-between py-2 border-t border-border mt-auto gap-2">
         <Button
           variant={hasUpvoted ? "default" : "outline"}
           size="sm"
