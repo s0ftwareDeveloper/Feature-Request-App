@@ -12,23 +12,21 @@ export default async function Home() {
   const isAdmin = session?.user?.role === "admin"
 
   return (
-    <main className="min-h-screen">
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background to-primary/10 z-0"></div>
-        <div className="container py-8 md:py-12 relative z-10">
-          <div className="mx-auto max-w-5xl space-y-8">
-            <div className="space-y-3 text-center">
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Feature Requests</h1>
-              <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed">
-                Vote on existing feature requests or submit your own ideas to help us improve our product.
-              </p>
-            </div>
-            <FilterBar />
-            <FeatureRequestList isAdmin={isAdmin} />
+    <div className="relative">
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background to-primary/10 z-0"></div>
+      <div className="relative z-10">
+        <div className="mx-auto max-w-5xl space-y-8">
+          <div className="space-y-3 text-center">
+            <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Feature Requests</h1>
+            <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed">
+              Vote on existing feature requests or submit your own ideas to help us improve our product.
+            </p>
           </div>
+          <FilterBar />
+          <FeatureRequestList isAdmin={isAdmin} />
         </div>
       </div>
-    </main>
+    </div>
   )
 }
 

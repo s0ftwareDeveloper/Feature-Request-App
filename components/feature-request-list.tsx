@@ -184,7 +184,12 @@ export function FeatureRequestList({ isAdmin = false }: FeatureRequestListProps)
       ) : (
         <div className="grid grid-cols-1 gap-6 fade-in md:grid-cols-2 lg:grid-cols-3">
           {Array.isArray(requests) && requests.map((request) => (
-            <FeatureRequestCard key={request.id} request={request} isAdmin={isAdmin} showDeleteButton />
+            <FeatureRequestCard 
+              key={request.id} 
+              request={request} 
+              isAdmin={isAdmin} 
+              showDeleteButton={false} 
+            />
           ))}
         </div>
       )}

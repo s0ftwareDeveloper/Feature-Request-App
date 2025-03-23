@@ -39,7 +39,7 @@ export default async function RootLayout({
           >
             <Providers>
               <Header />
-              <main className="container mx-auto px-4 py-6">
+              <main className="container mx-auto px-4 pt-20 pb-16 min-h-[calc(100vh-64px)]">
                 {children}
               </main>
               <Toaster />

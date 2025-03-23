@@ -9,7 +9,6 @@ import { ThumbsUp, Trash } from "lucide-react"
 import { useState } from "react"
 import { useToast } from "@/components/ui/use-toast"
 import { formatDistanceToNow } from "date-fns"
-import { StatusChangeButton } from "./status-change-button"
 import { useAuth } from "@/hooks/use-auth"
 import api from "@/lib/axios"
 import { useRouter } from "next/navigation"
@@ -119,7 +118,7 @@ export function FeatureRequestCard({
   }
 
   return (
-    <Card className="card-hover border-muted/40 overflow-hidden shadow-sm">
+    <Card className="card-hover border-muted/40 overflow-hidden shadow-sm flex flex-col h-full">
       <CardHeader className="pb-2 space-y-2">
         <div className="flex justify-between items-start gap-2">
           <CardTitle className="text-xl font-medium">{request.title}</CardTitle>
@@ -132,10 +131,10 @@ export function FeatureRequestCard({
           {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
         </p>
       </CardHeader>
-      <CardContent className="pb-6">
+      <CardContent className="pb-6 flex-grow">
         <p className="text-muted-foreground/90 leading-relaxed">{request.description}</p>
       </CardContent>
-      <CardFooter className="flex justify-between pt-2 border-t border-muted/30">
+      <CardFooter className="flex flex-wrap justify-between py-2 border-t border-muted/30 mt-auto gap-2">
         <Button
           variant={hasUpvoted ? "default" : "outline"}
           size="sm"
@@ -148,41 +147,41 @@ export function FeatureRequestCard({
             {upvotes}
           </Badge>
         </Button>
-        <div className="flex gap-2">
-          {isAdmin && (
-            <Select defaultValue={status} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-[130px] focus:ring-2 focus:ring-primary/40">
-                <SelectValue placeholder="Change status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="planned">Planned</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-          {(showDeleteButton && request.isOwner || isAdmin) && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="icon" className="hover:bg-destructive/90 transition-colors">
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="border-muted/40">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete this feature request.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="hover:bg-muted/80 transition-colors">Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90 transition-colors">Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-        </div>
+        
+        {isAdmin && (
+          <Select defaultValue={status} onValueChange={handleStatusChange}>
+            <SelectTrigger className="w-[130px] focus:ring-2 focus:ring-primary/40">
+              <SelectValue placeholder="Change status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="planned">Planned</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+        
+        {(showDeleteButton && request.isOwner || isAdmin) && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="icon" className="hover:bg-destructive/90 transition-colors flex-shrink-0 ml-auto">
+                <Trash className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="border-muted/40">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete this feature request.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="hover:bg-muted/80 transition-colors">Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90 transition-colors">Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </CardFooter>
     </Card>
   )

@@ -32,7 +32,7 @@ export function Header() {
   }
 
   return (
-    <header className="border-b border-muted/40 backdrop-blur-sm bg-background/95 sticky top-0 z-10 shadow-sm">
+    <header className="fixed top-0 left-0 right-0 border-b border-muted/40 backdrop-blur-xl bg-background/95 z-50 shadow-md">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/" className="font-semibold text-xl flex items-center gap-2">
