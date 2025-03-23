@@ -1,10 +1,17 @@
 import { AuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import GoogleProvider from 'next-auth/providers/google'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 
 export const authOptions: AuthOptions = {
+  debug: process.env.NODE_ENV === 'development',
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    }),
     CredentialsProvider({
       name: 'credentials',
       credentials: {
@@ -52,13 +59,74 @@ export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET || 'my-secret-that-should-be-in-env-file',
   pages: {
     signIn: '/login',
-    error: '/login?error=AuthenticationError'
+    error: '/auth/error'
   },
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // For Google sign-in, we need to check if the user exists and create them if not
+      if (account?.provider === 'google' && profile?.email) {
+        try {
+          // Check if user exists
+          let dbUser = await prisma.user.findUnique({
+            where: { email: profile.email }
+          });
+          
+          // If user doesn't exist, create one
+          if (!dbUser) {
+            dbUser = await prisma.user.create({
+              data: {
+                id: user.id || crypto.randomUUID(),
+                email: profile.email,
+                name: profile.name || profile.email?.split('@')[0],
+                // No password for OAuth users
+                password: '',
+                role: 'user',
+              }
+            });
+          }
+          
+          // Link the account to the user
+          await prisma.account.upsert({
+            where: {
+              provider_providerAccountId: {
+                provider: account.provider,
+                providerAccountId: account.providerAccountId
+              }
+            },
+            create: {
+              id: crypto.randomUUID(),
+              userId: dbUser.id,
+              type: account.type || 'oauth',
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+              access_token: account.access_token,
+              expires_at: account.expires_at,
+              token_type: account.token_type,
+              scope: account.scope,
+              id_token: account.id_token,
+            },
+            update: {
+              access_token: account.access_token,
+              expires_at: account.expires_at,
+              token_type: account.token_type,
+              scope: account.scope,
+              id_token: account.id_token,
+            }
+          });
+          
+          return true;
+        } catch (error) {
+          console.error('Error in signIn callback:', error);
+          return false;
+        }
+      }
+      
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.role = user.role
+        token.role = user.role || 'user'
       }
       return token
     },
