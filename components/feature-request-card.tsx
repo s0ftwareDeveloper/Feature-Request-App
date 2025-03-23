@@ -55,8 +55,16 @@ export function FeatureRequestCard({
 
   const handleUpvote = async () => {
     if (!session) {
-      router.push('/login')
-      return
+      toast({
+        title: "Authentication required",
+        description: "Please log in to upvote feature requests",
+        variant: "default",
+      })
+      
+      setTimeout(() => {
+        router.push('/login');
+      }, 1000);
+      return;
     }
 
     try {
@@ -67,8 +75,22 @@ export function FeatureRequestCard({
       }
       
       await refreshRequestData()
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upvote error:", error)
+      
+      if (error?.response?.status === 401) {
+        toast({
+          title: "Session expired",
+          description: "Please log in again to continue",
+          variant: "default",
+        })
+        
+        setTimeout(() => {
+          router.push('/login');
+        }, 1000);
+        return;
+      }
+      
       toast({
         title: "Error",
         description: "Failed to update upvote",
@@ -139,10 +161,17 @@ export function FeatureRequestCard({
           variant={hasUpvoted ? "default" : "outline"}
           size="sm"
           onClick={handleUpvote}
-          className={`gap-2 transition-all duration-200 ${hasUpvoted ? 'bg-primary text-primary-foreground' : 'hover:bg-primary/10'}`}
+          className={`gap-2 transition-all duration-200 ${
+            hasUpvoted 
+              ? 'bg-primary text-primary-foreground' 
+              : session 
+                ? 'hover:bg-primary/10' 
+                : 'hover:bg-primary/5 hover:border-primary/30'
+          }`}
+          title={session ? "Upvote this request" : "Log in to upvote"}
         >
           <ThumbsUp className={`h-4 w-4 ${hasUpvoted ? 'fill-current' : ''}`} />
-          <span>Upvote</span>
+          <span>{session ? "Upvote" : "Login to Upvote"}</span>
           <Badge variant="secondary" className="ml-1 font-medium">
             {upvotes}
           </Badge>

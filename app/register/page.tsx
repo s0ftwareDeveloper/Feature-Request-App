@@ -20,9 +20,13 @@ export default function Register() {
     setIsLoading(true)
 
     const formData = new FormData(e.currentTarget)
-    const response = await fetch("/api/register", {
+    const response = await fetch("/api/auth/register", {
       method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
+        name: formData.get("name"),
         email: formData.get("email"),
         password: formData.get("password"),
       }),
@@ -50,9 +54,13 @@ export default function Register() {
     <div className="mx-auto max-w-[350px] space-y-6">
       <div className="space-y-2 text-center">
         <h1 className="text-3xl font-bold">Create an Account</h1>
-        <p className="text-muted-foreground">Enter your email below to create your account</p>
+        <p className="text-muted-foreground">Enter your details below to create your account</p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Name</Label>
+          <Input id="name" name="name" type="text" placeholder="John Doe" required />
+        </div>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input id="email" name="email" type="email" placeholder="m@example.com" required />
