@@ -1,12 +1,15 @@
 "use client"
 
-import { useInfiniteQuery } from "@tanstack/react-query"
-import { useInView } from "react-intersection-observer"
-import { useEffect } from "react"
-import { FeatureRequestCard } from "./feature-request-card"
-import { Skeleton } from "@/components/ui/skeleton"
+import { useEffect, useState } from "react"
+import { FeatureRequestCard } from "@/components/feature-request-card"
 import { useSearchParams } from "next/navigation"
 import api from "@/lib/axios"
+import { Skeleton } from "@/components/ui/skeleton"
+import { AlertCircle, SearchX } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { debounce } from "lodash"
 
 type FeatureRequest = {
   id: string
@@ -16,72 +19,175 @@ type FeatureRequest = {
   createdAt: string
   upvotes: number
   hasUpvoted: boolean
+  isOwner?: boolean
 }
 
-export function FeatureRequestList({ isAdmin }: { isAdmin?: boolean }) {
-  const { ref, inView } = useInView()
+type FeatureRequestListProps = {
+  isAdmin?: boolean
+}
+
+export function FeatureRequestList({ isAdmin = false }: FeatureRequestListProps) {
   const searchParams = useSearchParams()
-  const status = searchParams.get("status")
-  const date = searchParams.get("date")
-
-  const fetchRequests = async ({ pageParam = 0 }) => {
-    const params = new URLSearchParams()
-    if (status) params.set("status", status)
-    if (date) params.set("date", date)
-    params.set("page", pageParam.toString())
-
-    const { data } = await api.get(`/requests?${params.toString()}`)
-    return data
-  }
-
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    status: queryStatus,
-  } = useInfiniteQuery({
-    queryKey: ["requests", status, date],
-    queryFn: fetchRequests,
-    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.nextPage : undefined),
+  const [requests, setRequests] = useState<FeatureRequest[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [pagination, setPagination] = useState({
+    total: 0,
+    currentPage: 1,
+    totalPages: 1
   })
 
-  useEffect(() => {
-    if (inView && hasNextPage) {
-      fetchNextPage()
-    }
-  }, [inView, fetchNextPage, hasNextPage])
+  const fetchRequests = async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-  if (queryStatus === "pending") {
+      const params = new URLSearchParams()
+      const status = searchParams.get("status")
+      const date = searchParams.get("date")
+      
+      if (status) params.set("status", status)
+      if (date) params.set("date", date)
+      if (searchTerm && searchTerm.trim() !== "") params.set("search", searchTerm.trim())
+
+      console.log(`Fetching requests with params: ${params.toString()}`)
+      const { data } = await api.get(`/requests?${params.toString()}`)
+      console.log('Received data:', data)
+      
+      if (Array.isArray(data)) {
+        // Handle direct array response
+        setRequests(data)
+        setPagination({
+          total: data.length,
+          currentPage: 1,
+          totalPages: 1
+        })
+      } else if (data && Array.isArray(data.requests)) {
+        // Handle paginated response
+        setRequests(data.requests)
+        setPagination({
+          total: data.total || 0,
+          currentPage: data.currentPage || 1,
+          totalPages: data.totalPages || 1
+        })
+      } else {
+        console.error('Unexpected data format:', data)
+        setRequests([])
+        setError("Received invalid data format from server")
+      }
+    } catch (error) {
+      console.error("Error fetching requests:", error)
+      setError("Failed to load feature requests. Please try again later.")
+      setRequests([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Use useEffect without debounce for initial load and filter changes
+  useEffect(() => {
+    if (!searchTerm) {
+      fetchRequests()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+  
+  // Separate useEffect for search with strong debounce
+  useEffect(() => {
+    if (!searchTerm) return;
+    
+    const handler = debounce(() => {
+      fetchRequests()
+    }, 500)
+    
+    handler()
+    
+    return () => {
+      handler.cancel()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm])
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value)
+    // Clear results immediately when search is cleared
+    if (e.target.value === "") {
+      fetchRequests()
+    }
+  }
+
+  if (error) {
     return (
-      <div className="space-y-4">
-        {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} className="h-[200px] w-full" />
-        ))}
-      </div>
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
     )
   }
 
-  if (queryStatus === "error") {
-    return <div>Error loading requests</div>
-  }
-
   return (
-    <div className="space-y-4">
-      {data.pages.map((page) =>
-        page.requests.map((request: FeatureRequest) => (
-          <FeatureRequestCard key={request.id} request={request} isAdmin={isAdmin} />
-        )),
-      )}
-      <div ref={ref} className="h-8">
-        {isFetchingNextPage && (
-          <div className="space-y-4">
-            {[...Array(2)].map((_, i) => (
-              <Skeleton key={i} className="h-[200px] w-full" />
-            ))}
-          </div>
+    <div className="space-y-6">
+      <div className="relative">
+        <Input
+          type="search"
+          placeholder="Search feature requests..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          className="w-full md:max-w-md pl-4 pr-10 py-2 bg-background/80 focus-visible:ring-primary/40 focus-visible:ring-offset-0"
+        />
+        {searchTerm && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8"
+            onClick={() => setSearchTerm("")}
+          >
+            <span className="sr-only">Clear search</span>
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 opacity-70">
+              <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.8071 2.99385 3.44303 2.99385 3.21848 3.2184C2.99394 3.44295 2.99394 3.80702 3.21848 4.03157L6.6869 7.49999L3.21848 10.9684C2.99394 11.193 2.99394 11.557 3.21848 11.7816C3.44303 12.0061 3.8071 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+            </svg>
+          </Button>
         )}
       </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-3 rounded-lg border p-5">
+              <div className="flex justify-between items-start">
+                <Skeleton className="h-5 w-1/2" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+              <Skeleton className="h-3 w-1/3" />
+              <Skeleton className="h-20 w-full" />
+              <div className="flex justify-between pt-2">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : requests.length === 0 ? (
+        <div className="rounded-lg border border-muted/60 bg-card p-8 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <SearchX className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="mt-4 text-lg font-semibold">No feature requests found</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {searchTerm 
+              ? `No results match your search "${searchTerm}". Try a different search term.` 
+              : "No feature requests match your current filters. Try changing your filters or check back later."}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 fade-in md:grid-cols-2 lg:grid-cols-3">
+          {Array.isArray(requests) && requests.map((request) => (
+            <FeatureRequestCard key={request.id} request={request} isAdmin={isAdmin} showDeleteButton />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

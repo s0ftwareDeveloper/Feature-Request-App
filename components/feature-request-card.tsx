@@ -113,42 +113,45 @@ export function FeatureRequestCard({
   }
 
   const statusColors = {
-    pending: "bg-yellow-500",
-    planned: "bg-blue-500",
-    completed: "bg-green-500",
+    pending: "bg-yellow-500/90 hover:bg-yellow-500",
+    planned: "bg-blue-500/90 hover:bg-blue-500",
+    completed: "bg-green-500/90 hover:bg-green-500",
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-xl">{request.title}</CardTitle>
-          <Badge className={statusColors[status as keyof typeof statusColors]}>{status}</Badge>
+    <Card className="card-hover border-muted/40 overflow-hidden shadow-sm">
+      <CardHeader className="pb-2 space-y-2">
+        <div className="flex justify-between items-start gap-2">
+          <CardTitle className="text-xl font-medium">{request.title}</CardTitle>
+          <Badge className={`${statusColors[status as keyof typeof statusColors]} transition-colors duration-200`}>
+            {status}
+          </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground flex items-center gap-1">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/60 mr-1"></span>
           {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
         </p>
       </CardHeader>
-      <CardContent>
-        <p>{request.description}</p>
+      <CardContent className="pb-6">
+        <p className="text-muted-foreground/90 leading-relaxed">{request.description}</p>
       </CardContent>
-      <CardFooter className="flex justify-between">
+      <CardFooter className="flex justify-between pt-2 border-t border-muted/30">
         <Button
           variant={hasUpvoted ? "default" : "outline"}
           size="sm"
           onClick={handleUpvote}
-          className="gap-2"
+          className={`gap-2 transition-all duration-200 ${hasUpvoted ? 'bg-primary text-primary-foreground' : 'hover:bg-primary/10'}`}
         >
-          <ThumbsUp className="h-4 w-4" />
+          <ThumbsUp className={`h-4 w-4 ${hasUpvoted ? 'fill-current' : ''}`} />
           <span>Upvote</span>
-          <Badge variant="secondary" className="ml-1">
+          <Badge variant="secondary" className="ml-1 font-medium">
             {upvotes}
           </Badge>
         </Button>
         <div className="flex gap-2">
           {isAdmin && (
             <Select defaultValue={status} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-[130px]">
+              <SelectTrigger className="w-[130px] focus:ring-2 focus:ring-primary/40">
                 <SelectValue placeholder="Change status" />
               </SelectTrigger>
               <SelectContent>
@@ -161,11 +164,11 @@ export function FeatureRequestCard({
           {(showDeleteButton && request.isOwner || isAdmin) && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="icon">
+                <Button variant="destructive" size="icon" className="hover:bg-destructive/90 transition-colors">
                   <Trash className="h-4 w-4" />
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="border-muted/40">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -173,8 +176,8 @@ export function FeatureRequestCard({
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                  <AlertDialogCancel className="hover:bg-muted/80 transition-colors">Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90 transition-colors">Delete</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

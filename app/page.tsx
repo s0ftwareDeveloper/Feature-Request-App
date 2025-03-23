@@ -2,7 +2,8 @@
 import { FeatureRequestList } from "@/components/feature-request-list"
 import { FilterBar } from "@/components/filter-bar"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { authOptions } from "@/app/api/auth/[...nextauth]/options"
+import { Sparkles, MegaphoneIcon } from "lucide-react"
 // import { SessionStatusClient } from "@/components/session-status-client"
 
 export default async function Home() {
@@ -11,15 +12,23 @@ export default async function Home() {
   const isAdmin = session?.user?.role === "admin"
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Feature Requests</h1>
-        <p className="text-muted-foreground">Browse and upvote feature requests from the community</p>
+    <main className="min-h-screen">
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background to-primary/10 z-0"></div>
+        <div className="container py-8 md:py-12 relative z-10">
+          <div className="mx-auto max-w-5xl space-y-8">
+            <div className="space-y-3 text-center">
+              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Feature Requests</h1>
+              <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed">
+                Vote on existing feature requests or submit your own ideas to help us improve our product.
+              </p>
+            </div>
+            <FilterBar />
+            <FeatureRequestList isAdmin={isAdmin} />
+          </div>
+        </div>
       </div>
-      <FilterBar />
-      <FeatureRequestList isAdmin={isAdmin} />
-      {/* <SessionStatusClient /> */}
-    </div>
+    </main>
   )
 }
 

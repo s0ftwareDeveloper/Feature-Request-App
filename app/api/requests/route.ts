@@ -42,13 +42,22 @@ export async function GET(request: Request) {
     
     // Build the base query
     const where: any = {
-      ...(status ? { status } : {}),
-      ...(search ? {
-        OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } }
+      ...(status ? { status } : {})
+    }
+    
+    // Add search conditionally with error handling
+    if (search) {
+      try {
+        // Use lowercase search for MySQL
+        const searchLower = search.toLowerCase()
+        where.OR = [
+          { title: { contains: searchLower } },
+          { description: { contains: searchLower } }
         ]
-      } : {})
+      } catch (error) {
+        console.error("Error adding search query:", error)
+        // Continue without search if there's an error
+      }
     }
 
     // Add date filtering
@@ -76,38 +85,50 @@ export async function GET(request: Request) {
     }
     
     // Get total count
-    const total = await prisma.featureRequest.count({ where })
-    const totalPages = Math.ceil(total / limit)
+    let total = 0;
+    let totalPages = 0;
+    let formattedRequests = [];
     
-    // Fetch feature requests with pagination
-    const requests = await prisma.featureRequest.findMany({
-      where,
-      take: limit,
-      skip: (page - 1) * limit,
-      orderBy: {
-        upvotes: {
-          _count: "desc",
+    try {
+      total = await prisma.featureRequest.count({ where })
+      totalPages = Math.ceil(total / limit)
+      
+      // Fetch feature requests with pagination
+      const requests = await prisma.featureRequest.findMany({
+        where,
+        take: limit,
+        skip: (page - 1) * limit,
+        orderBy: {
+          upvotes: {
+            _count: "desc",
+          },
         },
-      },
-      include: {
-        _count: {
-          select: { upvotes: true },
+        include: {
+          _count: {
+            select: { upvotes: true },
+          },
+          upvotes: userId
+            ? {
+                where: { userId },
+              }
+            : false,
         },
-        upvotes: userId
-          ? {
-              where: { userId },
-            }
-          : false,
-      },
-    })
-    
-    // Format the response with user-specific upvote status
-    const formattedRequests = requests.map(request => ({
-      ...request,
-      upvotes: request._count.upvotes,
-      hasUpvoted: userId ? (request.upvotes?.length ?? 0) > 0 : false,
-      isOwner: userId ? request.userId === userId : false,
-    }))
+      })
+      
+      // Format the response with user-specific upvote status
+      formattedRequests = requests.map((request: any) => ({
+        ...request,
+        upvotes: request._count.upvotes,
+        hasUpvoted: userId ? (request.upvotes?.length ?? 0) > 0 : false,
+        isOwner: userId ? request.userId === userId : false,
+      }))
+    } catch (dbError) {
+      console.error("Database error:", dbError);
+      return NextResponse.json({ 
+        error: "Database error", 
+        details: dbError instanceof Error ? dbError.message : "Unknown error" 
+      }, { status: 500 })
+    }
     
     return NextResponse.json({
       requests: formattedRequests,
