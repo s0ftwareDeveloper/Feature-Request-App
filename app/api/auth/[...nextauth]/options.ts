@@ -73,16 +73,36 @@ export const authOptions: AuthOptions = {
           
           // If user doesn't exist, create one
           if (!dbUser) {
+            // Access profile image correctly from Google profile
+            const profileImage = profile.picture || profile.image || 
+                                (profile as any).photos?.[0]?.value || 
+                                null;
+                                
             dbUser = await prisma.user.create({
               data: {
                 id: user.id || crypto.randomUUID(),
                 email: profile.email,
                 name: profile.name || profile.email?.split('@')[0],
+                // Save the user's profile image
+                image: profileImage,
                 // No password for OAuth users
                 password: '',
                 role: 'user',
               }
             });
+          }
+          // If user exists but doesn't have an image, update it with the Google profile image
+          else if (!dbUser.image) {
+            const profileImage = profile.picture || profile.image || 
+                               (profile as any).photos?.[0]?.value || 
+                               null;
+                               
+            if (profileImage) {
+              await prisma.user.update({
+                where: { id: dbUser.id },
+                data: { image: profileImage }
+              });
+            }
           }
           
           // Link the account to the user

@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { PlusCircle, LogOut, LayoutDashboard, Inbox } from "lucide-react"
 import { useSession, signOut } from "next-auth/react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -66,6 +66,9 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="rounded-full w-9 h-9 p-0">
                     <Avatar className="h-8 w-8 border-2 border-primary/20">
+                      {user.image ? (
+                        <AvatarImage src={user.image} alt={user.name || "User"} />
+                      ) : null}
                       <AvatarFallback className="bg-muted text-muted-foreground text-xs">
                         {getInitials()}
                       </AvatarFallback>
@@ -74,6 +77,15 @@ export function Header() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 border-muted/40">
                   <div className="flex items-center justify-start gap-2 p-2">
+                    <Avatar className="h-8 w-8">
+                      {user.image ? (
+                        <AvatarImage src={user.image} alt={user.name || "User"} />
+                      ) : (
+                        <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+                          {getInitials()}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
                     <div className="flex flex-col space-y-0.5">
                       <p className="text-sm font-medium">{user.name || 'User'}</p>
                       <p className="text-xs text-muted-foreground truncate">{user.email}</p>
