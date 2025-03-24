@@ -8,7 +8,7 @@ datasource db {
 }
 
 model account {
-  id                String  @id
+  id                String  @id @default(uuid())
   userId            String
   type              String
   provider          String
@@ -27,7 +27,7 @@ model account {
 }
 
 model featurerequest {
-  id          String   @id
+  id          String   @id @default(uuid())
   title       String   @db.VarChar(100)
   description String   @db.VarChar(500)
   status      String   @default("pending")
@@ -43,7 +43,7 @@ model featurerequest {
 }
 
 model session {
-  id           String   @id
+  id           String   @id @default(uuid())
   sessionToken String   @unique(map: "Session_sessionToken_key")
   userId       String
   expires      DateTime
@@ -53,7 +53,7 @@ model session {
 }
 
 model upvote {
-  id             String         @id
+  id             String         @id @default(uuid())
   userId         String
   requestId      String
   featurerequest featurerequest @relation(fields: [requestId], references: [id], onDelete: Cascade, map: "Upvote_requestId_fkey")
@@ -64,7 +64,7 @@ model upvote {
 }
 
 model user {
-  id             String           @id
+  id             String           @id @default(uuid())
   name           String?
   email          String           @unique(map: "User_email_key")
   password       String

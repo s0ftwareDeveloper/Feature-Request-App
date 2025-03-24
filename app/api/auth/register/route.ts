@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Create user
+    // Create user - no need to specify id, it will be generated
     const user = await prisma.user.create({
       data: {
         email,
