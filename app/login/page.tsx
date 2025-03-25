@@ -19,6 +19,9 @@ export default function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
 
+  // Get callback URL from searchParams (for redirecting after login)
+  const callbackUrl = searchParams.get("callbackUrl") || "/"
+
   // Check for error parameter in URL (from NextAuth)
   const error = searchParams.get("error")
   const errorMessage = error === "AuthenticationError" ? 
@@ -33,7 +36,8 @@ export default function Login() {
       const result = await signIn("credentials", {
         redirect: false,
         email,
-        password
+        password,
+        callbackUrl
       })
       
       if (result?.error) {
@@ -46,10 +50,10 @@ export default function Login() {
       } else {
         toast({
           title: "Login successful",
-          description: "Redirecting you to the homepage..."
+          description: "Redirecting you..."
         })
         
-        router.push("/")
+        router.push(callbackUrl)
         router.refresh()
       }
     } catch (err) {
@@ -66,7 +70,7 @@ export default function Login() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true)
     try {
-      await signIn("google", { callbackUrl: "/" })
+      await signIn("google", { callbackUrl })
     } catch (err) {
       console.error("Google sign-in error:", err)
       toast({

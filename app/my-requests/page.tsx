@@ -3,18 +3,38 @@ import { prisma } from "@/lib/prisma"
 import { FeatureRequestCard } from "@/components/feature-request-card"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/options"
+import { getToken } from "next-auth/jwt"
+import { cookies, headers } from "next/headers"
 
 export default async function MyRequests() {
-  // Get session from NextAuth instead of JWT
+  // Get session from NextAuth
   const session = await getServerSession(authOptions)
-
-  if (!session?.user) {
-    redirect("/login")
+  
+  // Get token directly as a fallback
+  let userId = session?.user?.id
+  let userRole = session?.user?.role || 'user'
+  
+  if (!userId) {
+    // If session doesn't provide userId, try to get it from the token
+    const headersList = headers()
+    const cookieStore = cookies()
+    
+    const token = await getToken({
+      req: { headers: headersList, cookies: cookieStore } as any,
+      secret: process.env.NEXTAUTH_SECRET,
+    })
+    
+    if (!token?.id) {
+      redirect("/login")
+    }
+    
+    userId = token.id as string
+    userRole = (token.role as string) || 'user'
   }
-
-  const userId = session.user.id
-  const isAdmin = session.user.role === "admin"
-
+  
+  // Get feature requests
+  const isAdmin = userRole === "admin"
+  
   const requests = await prisma.featureRequest.findMany({
     where: {
       userId,
