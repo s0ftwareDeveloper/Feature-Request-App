@@ -54,8 +54,16 @@ export function FeatureRequestCard({
   }
 
   const handleUpvote = async () => {
-    if (!session || !session.user) {
-      router.push('/login');
+    if (!session) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to upvote feature requests",
+        variant: "default",
+      })
+      
+      setTimeout(() => {
+        router.push('/login');
+      }, 1000);
       return;
     }
 
@@ -77,7 +85,9 @@ export function FeatureRequestCard({
           variant: "default",
         })
         
-        router.push('/login');
+        setTimeout(() => {
+          router.push('/login');
+        }, 1000);
         return;
       }
       
@@ -150,14 +160,7 @@ export function FeatureRequestCard({
         <Button
           variant={hasUpvoted ? "default" : "outline"}
           size="sm"
-          onClick={(e) => {
-            e.preventDefault();
-            if (!session || !session.user) {
-              router.push('/login');
-              return;
-            }
-            handleUpvote();
-          }}
+          onClick={handleUpvote}
           className={`gap-2 transition-all duration-200 ${
             hasUpvoted 
               ? 'bg-primary text-primary-foreground' 
@@ -168,7 +171,7 @@ export function FeatureRequestCard({
           title={session ? "Upvote this request" : "Log in to upvote"}
         >
           <ThumbsUp className={`h-4 w-4 ${hasUpvoted ? 'fill-current' : ''}`} />
-          <span>Upvote</span>
+          <span>{session ? "Upvote" : "Login to Upvote"}</span>
           <Badge variant="secondary" className="ml-1 font-medium">
             {upvotes}
           </Badge>
