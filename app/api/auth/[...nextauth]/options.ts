@@ -11,16 +11,6 @@ export const authOptions: AuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      profile(profile) {
-        // Customize the profile to ensure id is included
-        return {
-          id: profile.sub,
-          name: profile.name || profile.login,
-          email: profile.email,
-          image: profile.picture,
-          role: 'user'
-        }
-      }
     }),
     CredentialsProvider({
       name: 'credentials',
@@ -84,7 +74,7 @@ export const authOptions: AuthOptions = {
           // If user doesn't exist, create one
           if (!dbUser) {
             // Access profile image correctly from Google profile
-            const profileImage = (profile as any).picture || profile.image || 
+            const profileImage = profile.picture || profile.image || 
                                 (profile as any).photos?.[0]?.value || 
                                 null;
                                 
@@ -103,7 +93,7 @@ export const authOptions: AuthOptions = {
           }
           // If user exists but doesn't have an image, update it with the Google profile image
           else if (!dbUser.image) {
-            const profileImage = (profile as any).picture || profile.image || 
+            const profileImage = profile.picture || profile.image || 
                                (profile as any).photos?.[0]?.value || 
                                null;
                                
@@ -114,9 +104,6 @@ export const authOptions: AuthOptions = {
               });
             }
           }
-          
-          // Update the user object to make sure it has the database user ID
-          user.id = dbUser.id;
           
           // Link the account to the user
           await prisma.account.upsert({
@@ -156,36 +143,22 @@ export const authOptions: AuthOptions = {
       
       return true;
     },
-    async jwt({ token, user, account, profile }) {
-      // Initial sign in
-      if (account && user) {
-        // For OAuth sign-in (Google), ensure the user ID is correctly passed to the token
-        if (account.provider === 'google') {
-          // Find user by email to get the correct ID from our database
-          const dbUser = await prisma.user.findUnique({
-            where: { email: user.email || '' }
-          });
-          
-          if (dbUser) {
-            token.id = dbUser.id;
-            token.role = dbUser.role || 'user';
-            token.picture = dbUser.image || (profile as any).picture || user.image;
-          }
-        } else {
-          // For credentials sign-in
-          token.id = user.id;
-          token.role = user.role || 'user';
-        }
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+        token.role = user.role || 'user'
       }
-      return token;
+      return token
     },
     async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = (token.role as string) || 'user';
-        session.user.image = token.picture as string || token.image as string || null;
+      if (token) {
+        session.user = {
+          ...session.user,
+          id: token.id as string,
+          role: token.role as string || 'user'
+        }
       }
-      return session;
+      return session
     }
   }
 } 
