@@ -39,7 +39,7 @@ export async function PATCH(
     
     try {
       // Update status in database
-      const updatedRequest = await prisma.featureRequest.update({
+      const updatedRequest = await prisma.featurerequest.update({
         where: { id: params.id },
         data: { status }
       })
