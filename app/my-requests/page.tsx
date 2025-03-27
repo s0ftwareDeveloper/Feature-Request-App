@@ -126,15 +126,19 @@ export default async function MyRequests({ searchParams }: { searchParams: Searc
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold">My Requests</h1>
-          <p className="text-muted-foreground">Manage your submitted feature requests</p>
-        </div>
-        
-        <div className="flex flex-col space-y-2">
-          <StatusFilter activeStatus={statusFilter || null} />
-          <TimeframeFilter activeTimeframe={timeframeFilter || null} />
+      <div className="space-y-2 mb-6">
+        <h1 className="text-3xl font-bold">My Requests</h1>
+        <p className="text-muted-foreground">Manage your submitted feature requests</p>
+      </div>
+      
+      <div className="flex flex-col md:flex-row md:items-start gap-6">
+        {/* Filters Section - Left Side */}
+        <div className="md:w-1/2 space-y-4">
+          <h3 className="text-lg font-medium">Filter Requests</h3>
+          <div className="space-y-2">
+            <StatusFilter activeStatus={statusFilter || null} />
+            <TimeframeFilter activeTimeframe={timeframeFilter || null} />
+          </div>
         </div>
       </div>
       

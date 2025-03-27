@@ -1,6 +1,5 @@
 // This is a Server Component (no "use client" directive)
 import { FeatureRequestList } from "@/components/feature-request-list"
-import { FilterBar } from "@/components/filter-bar"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/options"
 import { Sparkles, MegaphoneIcon } from "lucide-react"
@@ -19,7 +18,6 @@ export default async function Home() {
           Vote on existing feature requests or submit your own ideas to help us improve our product.
         </p>
       </div>
-      <FilterBar />
       <FeatureRequestList isAdmin={isAdmin} />
     </div>
   )

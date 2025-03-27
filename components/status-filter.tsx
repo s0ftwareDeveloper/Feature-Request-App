@@ -42,7 +42,7 @@ export function StatusFilter({ activeStatus }: StatusFilterProps) {
     <div className="flex items-center space-x-2 overflow-auto pb-1">
       <span className="text-sm font-medium text-muted-foreground flex items-center">
         <FilterIcon className="h-4 w-4 mr-1" />
-        Filter by:
+        Status:
       </span>
       {statusFilters.map(filter => (
         <Badge
