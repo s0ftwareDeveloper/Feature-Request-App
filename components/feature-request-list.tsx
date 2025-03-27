@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { debounce } from "lodash"
 import { StatusFilter } from "@/components/status-filter"
+import { TimeframeFilter } from "@/components/timeframe-filter"
 
 type FeatureRequest = {
   id: string
@@ -37,6 +38,9 @@ export function FeatureRequestList({ isAdmin = false }: FeatureRequestListProps)
   const [searchTerm, setSearchTerm] = useState("")
   const [activeStatus, setActiveStatus] = useState<string | null>(
     searchParams?.get('status') || null
+  )
+  const [activeTimeframe, setActiveTimeframe] = useState<string | null>(
+    searchParams?.get('timeframe') || null
   )
   const [pagination, setPagination] = useState({
     total: 0,
@@ -67,13 +71,15 @@ export function FeatureRequestList({ isAdmin = false }: FeatureRequestListProps)
       // Include filter params if any
       const filter = searchParams?.get('filter')
       const status = searchParams?.get('status')
+      const timeframe = searchParams?.get('timeframe')
       
       let url = '/requests'
-      if (searchTerm || filter || status) {
+      if (searchTerm || filter || status || timeframe) {
         const params = new URLSearchParams()
         if (searchTerm) params.append('search', searchTerm)
         if (filter) params.append('filter', filter)
         if (status) params.append('status', status)
+        if (timeframe) params.append('timeframe', timeframe)
         url += `?${params.toString()}`
       }
       
@@ -148,10 +154,38 @@ export function FeatureRequestList({ isAdmin = false }: FeatureRequestListProps)
     }
   }
 
-  // Keep activeStatus in sync with URL params
+  // Keep activeStatus and activeTimeframe in sync with URL params
   useEffect(() => {
     setActiveStatus(searchParams?.get('status') || null)
+    setActiveTimeframe(searchParams?.get('timeframe') || null)
   }, [searchParams])
+
+  // Function to generate the empty state message based on filters
+  const getEmptyStateMessage = () => {
+    if (searchTerm) {
+      return `No results match your search "${searchTerm}". Try a different search term.`
+    }
+    
+    let message = ""
+    
+    if (activeTimeframe) {
+      const timeframeText = activeTimeframe === '24h' 
+        ? 'in the past 24 hours' 
+        : activeTimeframe === 'week' 
+          ? 'in the past week' 
+          : 'in the past month'
+          
+      message = activeStatus 
+        ? `No ${activeStatus} feature requests found ${timeframeText}` 
+        : `No feature requests found ${timeframeText}`
+    } else if (activeStatus) {
+      message = `No ${activeStatus} feature requests found`
+    } else {
+      message = "No feature requests match your current filters. Try changing your filters or check back later."
+    }
+    
+    return message
+  }
 
   if (error) {
     return (
@@ -189,7 +223,10 @@ export function FeatureRequestList({ isAdmin = false }: FeatureRequestListProps)
           )}
         </div>
         
-        <StatusFilter activeStatus={activeStatus} />
+        <div className="flex flex-col space-y-2">
+          <StatusFilter activeStatus={activeStatus} />
+          <TimeframeFilter activeTimeframe={activeTimeframe} />
+        </div>
       </div>
 
       {loading ? (
@@ -216,11 +253,7 @@ export function FeatureRequestList({ isAdmin = false }: FeatureRequestListProps)
           </div>
           <h3 className="mt-4 text-lg font-semibold">No feature requests found</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            {searchTerm 
-              ? `No results match your search "${searchTerm}". Try a different search term.` 
-              : activeStatus 
-                ? `No ${activeStatus} feature requests found. Try a different filter.`
-                : "No feature requests match your current filters. Try changing your filters or check back later."}
+            {getEmptyStateMessage()}
           </p>
         </div>
       ) : (
