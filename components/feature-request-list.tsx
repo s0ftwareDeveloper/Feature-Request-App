@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { FeatureRequestCard } from "@/components/feature-request-card"
-import { useSearchParams } from "next/navigation"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import api from "@/lib/axios"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AlertCircle, SearchX } from "lucide-react"
@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { debounce } from "lodash"
+import { StatusFilter } from "@/components/status-filter"
 
 type FeatureRequest = {
   id: string
@@ -27,16 +28,34 @@ type FeatureRequestListProps = {
 }
 
 export function FeatureRequestList({ isAdmin = false }: FeatureRequestListProps) {
+  const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const [requests, setRequests] = useState<FeatureRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [activeStatus, setActiveStatus] = useState<string | null>(
+    searchParams?.get('status') || null
+  )
   const [pagination, setPagination] = useState({
     total: 0,
     currentPage: 1,
     totalPages: 1
   })
+
+  // Create a new URLSearchParams instance to manipulate params
+  const createQueryString = (name: string, value: string | null) => {
+    const params = new URLSearchParams(searchParams?.toString())
+    
+    if (value === null) {
+      params.delete(name)
+    } else {
+      params.set(name, value)
+    }
+    
+    return params.toString()
+  }
 
   const fetchRequests = async () => {
     try {
@@ -129,6 +148,11 @@ export function FeatureRequestList({ isAdmin = false }: FeatureRequestListProps)
     }
   }
 
+  // Keep activeStatus in sync with URL params
+  useEffect(() => {
+    setActiveStatus(searchParams?.get('status') || null)
+  }, [searchParams])
+
   if (error) {
     return (
       <Alert variant="destructive">
@@ -141,27 +165,31 @@ export function FeatureRequestList({ isAdmin = false }: FeatureRequestListProps)
 
   return (
     <div className="space-y-6">
-      <div className="relative">
-        <Input
-          type="search"
-          placeholder="Search feature requests..."
-          value={searchTerm}
-          onChange={handleSearchChange}
-          className="w-full md:max-w-md pl-4 pr-10 py-2 bg-background/80 focus-visible:ring-primary/40 focus-visible:ring-offset-0"
-        />
-        {searchTerm && (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8"
-            onClick={() => setSearchTerm("")}
-          >
-            <span className="sr-only">Clear search</span>
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 opacity-70">
-              <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.8071 2.99385 3.44303 2.99385 3.21848 3.2184C2.99394 3.44295 2.99394 3.80702 3.21848 4.03157L6.6869 7.49999L3.21848 10.9684C2.99394 11.193 2.99394 11.557 3.21848 11.7816C3.44303 12.0061 3.8071 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-            </svg>
-          </Button>
-        )}
+      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+        <div className="relative max-w-md">
+          <Input
+            type="search"
+            placeholder="Search feature requests..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="w-full pl-4 pr-10 py-2 bg-background/80 focus-visible:ring-primary/40 focus-visible:ring-offset-0"
+          />
+          {searchTerm && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8"
+              onClick={() => setSearchTerm("")}
+            >
+              <span className="sr-only">Clear search</span>
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 opacity-70">
+                <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.8071 2.99385 3.44303 2.99385 3.21848 3.2184C2.99394 3.44295 2.99394 3.80702 3.21848 4.03157L6.6869 7.49999L3.21848 10.9684C2.99394 11.193 2.99394 11.557 3.21848 11.7816C3.44303 12.0061 3.8071 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+              </svg>
+            </Button>
+          )}
+        </div>
+        
+        <StatusFilter activeStatus={activeStatus} />
       </div>
 
       {loading ? (
@@ -190,7 +218,9 @@ export function FeatureRequestList({ isAdmin = false }: FeatureRequestListProps)
           <p className="mt-2 text-sm text-muted-foreground">
             {searchTerm 
               ? `No results match your search "${searchTerm}". Try a different search term.` 
-              : "No feature requests match your current filters. Try changing your filters or check back later."}
+              : activeStatus 
+                ? `No ${activeStatus} feature requests found. Try a different filter.`
+                : "No feature requests match your current filters. Try changing your filters or check back later."}
           </p>
         </div>
       ) : (

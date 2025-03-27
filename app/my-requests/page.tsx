@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma"
 import { FeatureRequestCard } from "@/components/feature-request-card"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/options"
+import { StatusFilter } from "@/components/status-filter"
 
-export default async function MyRequests() {
+export default async function MyRequests({ searchParams }: { searchParams: { status?: string } }) {
   // Get session from NextAuth instead of JWT
   const session = await getServerSession(authOptions)
 
@@ -14,6 +15,21 @@ export default async function MyRequests() {
 
   const userId = session.user.id
   const isAdmin = session.user.role === "admin"
+  const statusFilter = searchParams?.status
+
+  // Validate status parameter if present
+  const validStatuses = ['pending', 'planned', 'completed']
+  if (statusFilter && !validStatuses.includes(statusFilter)) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">My Requests</h1>
+          <p className="text-muted-foreground">Manage your submitted feature requests</p>
+        </div>
+        <div className="text-red-500">Invalid status parameter</div>
+      </div>
+    )
+  }
 
   // Log Prisma client models for debugging
   console.log("DEBUG - Available Prisma models:", Object.keys(prisma));
@@ -21,6 +37,7 @@ export default async function MyRequests() {
   const requests = await prisma.featurerequest.findMany({
     where: {
       userId,
+      ...(statusFilter ? { status: statusFilter } : {})
     },
     orderBy: {
       upvote: {
@@ -48,12 +65,21 @@ export default async function MyRequests() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">My Requests</h1>
-        <p className="text-muted-foreground">Manage your submitted feature requests</p>
+      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">My Requests</h1>
+          <p className="text-muted-foreground">Manage your submitted feature requests</p>
+        </div>
+        
+        <StatusFilter activeStatus={statusFilter || null} />
       </div>
+      
       {formattedRequests.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">You haven't submitted any feature requests yet</div>
+        <div className="text-center py-12 text-muted-foreground">
+          {statusFilter 
+            ? `You haven't submitted any ${statusFilter} feature requests yet` 
+            : "You haven't submitted any feature requests yet"}
+        </div>
       ) : (
         <div className="space-y-4">
           {formattedRequests.map((request) => (

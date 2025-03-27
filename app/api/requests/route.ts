@@ -6,13 +6,30 @@ import { authOptions } from "../auth/[...nextauth]/options"
 // Create a fresh Prisma client
 const db = new PrismaClient()
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     console.log("Starting GET /api/requests")
+    
+    // Get the URL to extract query parameters
+    const url = new URL(request.url)
+    const status = url.searchParams.get('status')
+    const search = url.searchParams.get('search')
+    
+    // Validate status parameter
+    const validStatuses = ['pending', 'planned', 'completed']
+    if (status && !validStatuses.includes(status)) {
+      return NextResponse.json({ error: "Invalid status parameter" }, { status: 400 })
+    }
     
     // Get the current user's session
     const session = await getServerSession(authOptions)
     const userId = session?.user?.id
+    
+    // Prepare SQL query with potential WHERE clause for status filtering
+    const statusFilter = status ? `WHERE f.status = '${status}'` : ''
+    const searchFilter = search 
+      ? `${statusFilter ? 'AND' : 'WHERE'} (f.title LIKE '%${search}%' OR f.description LIKE '%${search}%')` 
+      : ''
     
     // Fetch all feature requests with upvote counts - sorted by upvote count in descending order
     const sql = `
@@ -22,10 +39,14 @@ export async function GET() {
         ${userId ? `MAX(CASE WHEN u.userId = ? THEN 1 ELSE 0 END) AS hasUpvoted` : '0 AS hasUpvoted'}
       FROM featurerequest f
       LEFT JOIN upvote u ON f.id = u.requestId
+      ${statusFilter}
+      ${searchFilter}
       GROUP BY f.id, f.title, f.description, f.status, f.createdAt, f.updatedAt, f.userId
       ORDER BY COUNT(DISTINCT u.id) DESC, f.createdAt DESC
       LIMIT 50
     `
+    
+    console.log("Executing SQL query:", sql)
     
     // Execute the raw query directly
     const results = userId
@@ -50,7 +71,8 @@ export async function GET() {
       total: formattedResults.length,
       hasMore: false,
       currentPage: 0,
-      totalPages: 1
+      totalPages: 1,
+      filterApplied: !!status
     })
   } catch (error) {
     console.error("ERROR in GET /api/requests:", error)
