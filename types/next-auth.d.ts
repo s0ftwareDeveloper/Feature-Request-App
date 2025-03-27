@@ -10,12 +10,16 @@ declare module "next-auth" {
       id: string
       /** The user's role. */
       role: string
+      /** The user's profile image URL. */
+      image?: string | null
     } & DefaultSession["user"]
   }
 
   interface User {
     /** The user's role. */
     role?: string
+    /** The user's profile image URL. */
+    image?: string | null
   }
 }
 
@@ -26,5 +30,9 @@ declare module "next-auth/jwt" {
     id?: string
     /** The user's role. */
     role?: string
+    /** The user's profile image URL. */
+    picture?: string
+    /** Alternate field for the user's profile image URL. */
+    image?: string
   }
 } 
