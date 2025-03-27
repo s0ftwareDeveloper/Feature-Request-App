@@ -15,7 +15,10 @@ export default async function MyRequests() {
   const userId = session.user.id
   const isAdmin = session.user.role === "admin"
 
-  const requests = await prisma.featureRequest.findMany({
+  // Log Prisma client models for debugging
+  console.log("DEBUG - Available Prisma models:", Object.keys(prisma));
+
+  const requests = await prisma.featurerequest.findMany({
     where: {
       userId,
     },
@@ -24,9 +27,9 @@ export default async function MyRequests() {
     },
     include: {
       _count: {
-        select: { upvotes: true },
+        select: { upvote: true },
       },
-      upvotes: {
+      upvote: {
         where: { userId },
       },
     },
@@ -36,8 +39,8 @@ export default async function MyRequests() {
     ...request,
     createdAt: request.createdAt.toISOString(),
     updatedAt: request.updatedAt.toISOString(),
-    upvotes: request._count.upvotes,
-    hasUpvoted: request.upvotes.length > 0,
+    upvotes: request._count.upvote,
+    hasUpvoted: request.upvote.length > 0,
     isOwner: true,
   }))
 
