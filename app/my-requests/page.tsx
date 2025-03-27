@@ -23,7 +23,9 @@ export default async function MyRequests() {
       userId,
     },
     orderBy: {
-      createdAt: "desc",
+      upvote: {
+        _count: "desc"
+      }
     },
     include: {
       _count: {

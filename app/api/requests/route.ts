@@ -14,7 +14,7 @@ export async function GET() {
     const session = await getServerSession(authOptions)
     const userId = session?.user?.id
     
-    // Fetch all feature requests with upvote counts
+    // Fetch all feature requests with upvote counts - sorted by upvote count in descending order
     const sql = `
       SELECT 
         f.*,
@@ -23,7 +23,7 @@ export async function GET() {
       FROM featurerequest f
       LEFT JOIN upvote u ON f.id = u.requestId
       GROUP BY f.id, f.title, f.description, f.status, f.createdAt, f.updatedAt, f.userId
-      ORDER BY f.createdAt DESC
+      ORDER BY COUNT(DISTINCT u.id) DESC, f.createdAt DESC
       LIMIT 50
     `
     
