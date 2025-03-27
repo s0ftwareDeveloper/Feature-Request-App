@@ -217,7 +217,7 @@ export function FeatureRequestList({ isAdmin = false }: FeatureRequestListProps)
               placeholder="Search feature requests..."
               value={searchTerm}
               onChange={handleSearchChange}
-              className="w-full pl-4 pr-10 py-2 bg-background/80 focus-visible:ring-primary/40 focus-visible:ring-offset-0"
+              className="w-full pl-4 pr-10 py-2 bg-background/80 focus-visible:ring-primary/40 focus-visible:ring-offset-0 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
             />
             {searchTerm && (
               <Button 
