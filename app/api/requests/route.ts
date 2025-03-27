@@ -1,101 +1,97 @@
-import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { PrismaClient } from "@prisma/client"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "../auth/[...nextauth]/options"
-import { subDays, subWeeks, subMonths } from 'date-fns'
 
-const ITEMS_PER_PAGE = 10
-const MAX_TITLE_LENGTH = 100
-const MAX_DESCRIPTION_LENGTH = 500
-const VALID_STATUSES = ['pending', 'planned', 'completed', 'rejected']
-const VALID_DATE_FILTERS = ['day', 'week', 'month']
+// Create a fresh Prisma client
+const db = new PrismaClient()
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url)
-    const page = Number(searchParams.get("page") || "0")
-    const status = searchParams.get("status")
-    const take = 10
-    const skip = page * take
-
-    // Build where clause
-    const where = status ? { status } : {}
-
-    // Get requests with upvote count
-    const requests = await prisma.featurerequest.findMany({
-      where,
-      orderBy: [
-        { createdAt: 'desc' }
-      ],
-      include: {
-        _count: {
-          select: { upvote: true }
-        }
-      },
-      take,
-      skip,
-    })
-
-    // Get total count for pagination
-    const total = await prisma.featurerequest.count({ where })
-
-    // Even if no requests found, return empty array (not an error)
+    console.log("Starting GET /api/requests")
+    
+    // Get the current user's session
+    const session = await getServerSession(authOptions)
+    const userId = session?.user?.id
+    
+    // Fetch all feature requests with upvote counts
+    const sql = `
+      SELECT 
+        f.*,
+        COUNT(DISTINCT u.id) AS upvotes,
+        ${userId ? `MAX(CASE WHEN u.userId = ? THEN 1 ELSE 0 END) AS hasUpvoted` : '0 AS hasUpvoted'}
+      FROM featurerequest f
+      LEFT JOIN upvote u ON f.id = u.requestId
+      GROUP BY f.id, f.title, f.description, f.status, f.createdAt, f.updatedAt, f.userId
+      ORDER BY f.createdAt DESC
+      LIMIT 50
+    `
+    
+    // Execute the raw query directly
+    const results = userId
+      ? await db.$queryRawUnsafe(sql, userId)
+      : await db.$queryRawUnsafe(sql)
+    
+    console.log(`Got ${Array.isArray(results) ? results.length : 0} results`)
+    
+    // Format the results to ensure hasUpvoted is a boolean
+    const formattedResults = Array.isArray(results) 
+      ? results.map(request => ({
+          ...request,
+          upvotes: Number(request.upvotes || 0),
+          hasUpvoted: Boolean(request.hasUpvoted),
+          isOwner: userId ? request.userId === userId : false
+        }))
+      : []
+    
+    // Return the data directly
     return NextResponse.json({
-      requests: requests.map(request => ({
-        ...request,
-        upvotes: request._count.upvote
-      })),
-      hasMore: (page + 1) * take < total,
-      total
+      requests: formattedResults,
+      total: formattedResults.length,
+      hasMore: false,
+      currentPage: 0,
+      totalPages: 1
     })
-
   } catch (error) {
-    console.error("Error fetching requests:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch requests" },
-      { status: 500 }
-    )
+    console.error("ERROR in GET /api/requests:", error)
+    return NextResponse.json({ error: String(error) }, { status: 500 })
   }
 }
 
+// Keep the POST method simple for now
 export async function POST(request: Request) {
   try {
-    // Get session from NextAuth instead of token
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-
-    const json = await request.json()
-    const { title, description } = json
-
+    
+    const { title, description } = await request.json();
+    
     if (!title || !description) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+      return NextResponse.json({ error: "Title and description are required" }, { status: 400 });
     }
-
-    // Validate field lengths
-    if (title.length > MAX_TITLE_LENGTH) {
-      return NextResponse.json({ error: "Title exceeds maximum length" }, { status: 400 })
-    }
-
-    if (description.length > MAX_DESCRIPTION_LENGTH) {
-      return NextResponse.json({ error: "Description exceeds maximum length" }, { status: 400 })
-    }
-
-    const featureRequest = await prisma.featureRequest.create({
-      data: {
-        title,
-        description,
-        userId: session.user.id,
-        status: 'pending'
-      },
-    })
-
-    return NextResponse.json(featureRequest, { status: 201 })
+    
+    // Create a new feature request using raw SQL
+    await db.$executeRaw`
+      INSERT INTO featurerequest (id, title, description, status, createdAt, updatedAt, userId)
+      VALUES (UUID(), ${title}, ${description}, 'pending', NOW(), NOW(), ${session.user.id})
+    `;
+    
+    return NextResponse.json({
+      success: true,
+      message: "Feature request created"
+    }, { status: 201 });
+    
   } catch (error) {
-    console.error("Error creating feature request:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error in POST /api/requests:", error);
+    
+    return NextResponse.json({
+      error: "Failed to create feature request",
+      message: String(error),
+      stack: (error as any).stack
+    }, { status: 500 });
   }
 }
 

@@ -45,11 +45,29 @@ export function FeatureRequestCard({
 
   const refreshRequestData = async () => {
     try {
+      console.log(`Refreshing data for request ${request.id}`)
       const { data } = await api.get(`/requests/${request.id}`)
-      setUpvotes(data.upvotes)
-      setHasUpvoted(data.hasUpvoted)
-    } catch (error) {
+      console.log("Received updated data:", data)
+
+      if (data && typeof data.upvotes === 'number') {
+        if (data.upvotes !== upvotes) {
+          setUpvotes(data.upvotes)
+        }
+        if (!!data.hasUpvoted !== hasUpvoted) {
+          setHasUpvoted(!!data.hasUpvoted)
+        }
+      } else {
+        console.warn("Received invalid data format during refresh:", data)
+      }
+    } catch (error: any) {
       console.error("Error refreshing request data:", error)
+      // Enhanced error reporting for refreshRequestData
+      console.error("REFRESH ERROR DETAILS:", {
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data,
+        message: error?.message
+      });
     }
   }
 
@@ -67,35 +85,82 @@ export function FeatureRequestCard({
       return;
     }
 
+    const previousUpvotes = upvotes;
+    const previousHasUpvoted = hasUpvoted;
+
     try {
       if (hasUpvoted) {
-        await api.delete(`/upvote/${request.id}`)
+        setUpvotes(prev => Math.max(0, prev - 1));
+        setHasUpvoted(false);
+
+        console.log(`Attempting to DELETE upvote for request ${request.id}`);
+        await api.delete(`/upvote/${request.id}`);
+        console.log("Upvote removal request sent successfully.");
+
       } else {
-        await api.post(`/upvote/${request.id}`)
+        setUpvotes(prev => prev + 1);
+        setHasUpvoted(true);
+
+        console.log(`Attempting to POST upvote for request ${request.id}`);
+        const response = await api.post(`/upvote/${request.id}`);
+        console.log(`Upvote addition request sent. Status: ${response.status}`, response.data);
+
+        if (response.status === 200) {
+          console.log("Server indicated upvote already existed.");
+          // UI already reflects this optimistically
+        } else if (response.status === 201) {
+          console.log("Server confirmed new upvote created.");
+          // UI already reflects this optimistically
+        }
       }
-      
-      await refreshRequestData()
+
+      setTimeout(refreshRequestData, 500);
+
     } catch (error: any) {
-      console.error("Upvote error:", error)
+      console.error(`Initial upvote action failed for request ${request.id}:`, error);
       
+      // Enhanced error reporting
+      const errorDetails = {
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data,
+        message: error?.message,
+        stack: error?.stack
+      };
+      
+      console.error("DETAILED CLIENT ERROR:", errorDetails);
+
+      console.log(`Rolling back optimistic UI update for request ${request.id} due to initial action failure.`);
+      setUpvotes(previousUpvotes);
+      setHasUpvoted(previousHasUpvoted);
+
       if (error?.response?.status === 401) {
         toast({
           title: "Session expired",
           description: "Please log in again to continue",
           variant: "default",
         })
-        
         setTimeout(() => {
           router.push('/login');
         }, 1000);
-        return;
+      } else {
+        // More detailed error toast
+        toast({
+          title: "Upvote Error",
+          description: error?.response?.data?.message || 
+                      `Could not update upvote status. Server error: ${error?.response?.status || 'unknown'}`,
+          variant: "destructive",
+        })
+        
+        // In development, show a more detailed error toast
+        if (process.env.NODE_ENV === "development") {
+          toast({
+            title: "Detailed Error Info",
+            description: `Error: ${JSON.stringify(errorDetails, null, 2).substring(0, 255)}...`,
+            variant: "destructive",
+          })
+        }
       }
-      
-      toast({
-        title: "Error",
-        description: "Failed to update upvote",
-        variant: "destructive",
-      })
     }
   }
 
@@ -168,10 +233,10 @@ export function FeatureRequestCard({
                 ? 'hover:bg-primary/10' 
                 : 'hover:bg-primary/5 hover:border-primary/30'
           }`}
-          title={session ? "Upvote this request" : "Log in to upvote"}
+          title={session ? (hasUpvoted ? "Remove upvote" : "Upvote this request") : "Log in to upvote"}
         >
           <ThumbsUp className={`h-4 w-4 ${hasUpvoted ? 'fill-current' : ''}`} />
-          <span>{session ? "Upvote" : "Login to Upvote"}</span>
+          <span>{session ? (hasUpvoted ? "Upvoted" : "Upvote") : "Login to Upvote"}</span>
           <Badge variant="secondary" className="ml-1 font-medium">
             {upvotes}
           </Badge>

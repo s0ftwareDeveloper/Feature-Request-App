@@ -42,43 +42,55 @@ export function FeatureRequestList({ isAdmin = false }: FeatureRequestListProps)
     try {
       setLoading(true)
       setError(null)
-
-      const params = new URLSearchParams()
-      const status = searchParams.get("status")
-      const date = searchParams.get("date")
       
-      if (status) params.set("status", status)
-      if (date) params.set("date", date)
-      if (searchTerm && searchTerm.trim() !== "") params.set("search", searchTerm.trim())
-
-      console.log(`Fetching requests with params: ${params.toString()}`)
-      const { data } = await api.get(`/requests?${params.toString()}`)
-      console.log('Received data:', data)
+      console.log('Fetching feature requests...')
       
-      if (Array.isArray(data)) {
-        // Handle direct array response
-        setRequests(data)
+      // Include filter params if any
+      const filter = searchParams?.get('filter')
+      const status = searchParams?.get('status')
+      
+      let url = '/requests'
+      if (searchTerm || filter || status) {
+        const params = new URLSearchParams()
+        if (searchTerm) params.append('search', searchTerm)
+        if (filter) params.append('filter', filter)
+        if (status) params.append('status', status)
+        url += `?${params.toString()}`
+      }
+      
+      // Make request with query params
+      const response = await api.get(url)
+      console.log('API response:', response)
+      
+      // Check if we got valid data
+      if (response?.data?.requests && Array.isArray(response.data.requests)) {
+        // Ensure all requests have numeric upvote counts
+        const formattedRequests = response.data.requests.map((req: any) => ({
+          ...req,
+          upvotes: Number(req.upvotes || 0),
+          hasUpvoted: Boolean(req.hasUpvoted)
+        }))
+        
+        setRequests(formattedRequests)
+        console.log(`Loaded ${formattedRequests.length} requests`)
+        
+        // Update pagination if available
         setPagination({
-          total: data.length,
-          currentPage: 1,
-          totalPages: 1
-        })
-      } else if (data && Array.isArray(data.requests)) {
-        // Handle paginated response
-        setRequests(data.requests)
-        setPagination({
-          total: data.total || 0,
-          currentPage: data.currentPage || 1,
-          totalPages: data.totalPages || 1
+          total: response.data.total || formattedRequests.length,
+          currentPage: response.data.currentPage || 0,
+          totalPages: response.data.totalPages || 1
         })
       } else {
-        console.error('Unexpected data format:', data)
+        console.error('Invalid response format:', response?.data)
+        setError('Received invalid data from server')
         setRequests([])
-        setError("Received invalid data format from server")
       }
-    } catch (error) {
-      console.error("Error fetching requests:", error)
-      setError("Failed to load feature requests. Please try again later.")
+    } catch (error: any) {
+      console.error('Error fetching requests:', error)
+      console.error('Response data:', error.response?.data)
+      
+      // Show a helpful error message
+      setError(error.response?.data?.error || 'Could not load feature requests')
       setRequests([])
     } finally {
       setLoading(false)

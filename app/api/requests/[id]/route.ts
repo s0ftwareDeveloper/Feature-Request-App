@@ -17,8 +17,10 @@ export async function DELETE(
 
     const requestId = params.id
     
+    console.log("DEBUG - Available Prisma models:", Object.keys(prisma));
+    
     // Fetch the feature request to check ownership
-    const featureRequest = await prisma.featureRequest.findUnique({
+    const featureRequest = await prisma.featurerequest.findUnique({
       where: { id: requestId },
     })
 
@@ -37,13 +39,21 @@ export async function DELETE(
     })
 
     // Delete the feature request
-    await prisma.featureRequest.delete({
+    await prisma.featurerequest.delete({
       where: { id: requestId },
     })
 
     return NextResponse.json({ success: true })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error deleting feature request:", error)
+    console.error("DETAILED DELETE ERROR INFO:", {
+      message: error.message,
+      code: error.code,
+      name: error.name,
+      stack: error.stack,
+      meta: error.meta,
+      cause: error.cause
+    })
     return new NextResponse("Internal server error", { status: 500 })
   }
 }
@@ -54,39 +64,69 @@ export async function GET(
 ) {
   try {
     const requestId = params.id
+    console.log(`GET /api/requests/${requestId}`)
     
     // Get user from NextAuth session
     const session = await getServerSession(authOptions)
     const userId = session?.user?.id
     
+    console.log("DEBUG - Available Prisma models:", Object.keys(prisma));
+    console.log(`DEBUG - Attempting to fetch feature request ${requestId}`);
+    
     // Fetch the feature request with upvote count and user's upvote status
-    const featureRequest = await prisma.featureRequest.findUnique({
+    const featureRequest = await prisma.featurerequest.findUnique({
       where: { id: requestId },
       include: {
         _count: {
-          select: { upvotes: true }
+          select: { upvote: true }
         },
-        upvotes: userId ? {
+        upvote: userId ? {
           where: { userId },
-        } : false,
+        } : undefined,
       }
     })
 
     if (!featureRequest) {
-      return new NextResponse("Feature request not found", { status: 404 })
+      console.log(`Feature request not found: ${requestId}`)
+      return NextResponse.json({ error: "Feature request not found" }, { status: 404 })
     }
 
+    console.log(`DEBUG - Found feature request: ${JSON.stringify(featureRequest, null, 2)}`);
+
+    // Safely handle upvotes data
+    const hasUpvoted = userId ? 
+      (featureRequest.upvote && Array.isArray(featureRequest.upvote) && featureRequest.upvote.length > 0) : 
+      false
+    
     // Format the response with user-specific upvote status
     const formattedRequest = {
-      ...featureRequest,
-      upvotes: featureRequest._count.upvotes,
-      hasUpvoted: userId ? (featureRequest.upvotes && 'length' in featureRequest.upvotes ? featureRequest.upvotes.length > 0 : false) : false,
-      isOwner: userId ? featureRequest.userId === userId : false,
+      id: featureRequest.id,
+      title: featureRequest.title,
+      description: featureRequest.description,
+      status: featureRequest.status,
+      createdAt: featureRequest.createdAt,
+      updatedAt: featureRequest.updatedAt,
+      userId: featureRequest.userId,
+      upvotes: featureRequest._count.upvote,
+      hasUpvoted: hasUpvoted,
+      isOwner: userId ? featureRequest.userId === userId : false
     }
 
     return NextResponse.json(formattedRequest)
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching feature request:", error)
-    return new NextResponse("Internal server error", { status: 500 })
+    console.error("DETAILED GET ERROR INFO:", {
+      message: error.message,
+      code: error.code,
+      name: error.name,
+      stack: error.stack,
+      meta: error.meta,
+      cause: error.cause,
+      params: params
+    })
+    return NextResponse.json({ 
+      error: "Internal server error",
+      message: error instanceof Error ? error.message : String(error)
+    }, { status: 500 })
   }
 } 
