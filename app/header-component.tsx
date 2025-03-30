@@ -15,6 +15,7 @@ import {
 import { useEffect, useState } from "react"
 import Image from "next/image"
 
+
 export function Header() {
   const { data: session, status, update } = useSession()
   const user = session?.user
@@ -201,4 +202,3 @@ export function Header() {
     </header>
   )
 }
-

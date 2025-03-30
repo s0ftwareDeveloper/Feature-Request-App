@@ -1,17 +1,26 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import dynamic from 'next/dynamic' // Import dynamic
+import { Inter } from "next/font/google" // Uncomment font import
+// import { Inter } from "next/font/google" // Temporarily comment out font import
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
-import { Header } from "@/components/header"
-import { AuthProvider } from "@/components/auth-provider"
-import { headers } from "next/headers"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/app/api/auth/[...nextauth]/options"
+// Static import replaced by dynamic import below
+// import { Header } from "../components/header" 
 import { Providers } from "@/components/providers"
 
-const inter = Inter({ subsets: ["latin"] })
+// Comment out DummyClient import
+// const DummyClient = dynamic(() => import('@/components/dummy-client').then(mod => mod.DummyClient), {
+//   ssr: false, 
+// });
+
+// Update Header dynamic import path to be relative to app dir
+const Header = dynamic(() => import('./header-component').then(mod => mod.Header), {
+  ssr: false, 
+  // loading: () => <div className="h-16">{/* Placeholder height */}</div> // Optional loading state
+});
+
+const inter = Inter({ subsets: ["latin"] }) // Uncomment font definition
 
 export const metadata: Metadata = {
   title: "Feature Request System",
@@ -19,38 +28,25 @@ export const metadata: Metadata = {
   generator: 'v0.dev'
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const session = await getServerSession(authOptions)
-  console.log("Server-side session:", session)
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <AuthProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <Providers>
-              <Header />
-              <main className="container mx-auto px-4 pt-20 pb-16 min-h-[calc(100vh-64px)]">
-                {children}
-              </main>
-              <Toaster />
-            </Providers>
-          </ThemeProvider>
-        </AuthProvider>
+        <Providers>
+          {/* <DummyClient /> */} {/* Comment out DummyClient usage */}
+          <Header /> {/* Uncomment Header usage */}
+          <main className="container mx-auto px-4 pt-20 pb-16 min-h-[calc(100vh-64px)]">
+            {children}
+          </main>
+          <Toaster />
+        </Providers>
       </body>
     </html>
   )
 }
-
-
 
 import './globals.css'
