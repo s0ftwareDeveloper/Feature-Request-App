@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Source .env file if it exists for secrets
+if [ -f .env ]; then
+  echo "Loading environment variables from .env file..."
+  export $(grep -v '^#' .env | xargs)
+fi
+
+# AWS Region
+export AWS_REGION="your_aws_region"
+# Application Name
+export APP_NAME="your_app_name"
+# VPC and Networking
+export VPC_ID="your_vpc_id"
+export IGW_ID="your_igw_id"
+export PUBLIC_SUBNET_1_ID="your_public_subnet_1_id"
+export PUBLIC_SUBNET_2_ID="your_public_subnet_2_id"
+export PRIVATE_SUBNET_1_ID="your_private_subnet_1_id" 
+export PRIVATE_SUBNET_2_ID="your_private_subnet_2_id"
+export PUBLIC_ROUTE_TABLE_ID="your_public_route_table_id"
+export PRIVATE_ROUTE_TABLE_ID="your_private_route_table_id"
+# Security Groups
+export RDS_SG_ID="your_rds_security_group_id"
+export ECS_SG_ID="your_ecs_security_group_id"
+export ALB_SG_ID="your_alb_security_group_id"
+# RDS Configuration
+export DB_SUBNET_GROUP_NAME="your_db_subnet_group_name"
+export RDS_INSTANCE_IDENTIFIER="your_rds_instance_identifier"
+export RDS_ENDPOINT="your_rds_endpoint"
+export DB_NAME="your_db_name"
+export DB_USERNAME="your_db_username"
+export DB_PASSWORD="your_db_password"
+export DATABASE_URL="mysql://your_db_username:your_db_password@your_rds_endpoint:3306/your_db_name"
+# AWS Secrets Manager Configuration
+export SECRET_NAME="your_secret_name"
+export SECRET_ARN="your_secret_arn"
+export SECRETS_POLICY_ARN="your_secrets_policy_arn"
+# ECR Configuration
+export ECR_REPOSITORY_NAME="your_ecr_repository_name"
+export ECR_REPOSITORY_URI="your_ecr_repository_uri"
+# ECS Configuration
+export ECS_CLUSTER_NAME="your_ecs_cluster_name"
+export ECS_SERVICE_NAME="your_ecs_service_name"
+export ECS_TASK_FAMILY="your_ecs_task_family"
+export ECS_CONTAINER_NAME="your_ecs_container_name"
+export ECS_EXECUTION_ROLE_ARN="your_ecs_execution_role_arn"
+export ECS_TASK_ROLE_ARN="your_ecs_task_role_arn"
+export ECS_TASK_DEFINITION_ARN="your_ecs_task_definition_arn"
+# ALB Configuration
+export ALB_NAME="your_alb_name"
+export ALB_ARN="your_alb_arn"
+export ALB_DNS_NAME="your_alb_dns_name"
+export TG_NAME="your_target_group_name"
+export TG_ARN="your_target_group_arn"
+export LISTENER_ARN="your_listener_arn"
+# Domain Configuration
+export DOMAIN_NAME="your_domain_name"
+export SUBDOMAIN="your_subdomain"
+export FULL_DOMAIN="your_full_domain"
+export WWW_DOMAIN="your_www_domain"
+export CERTIFICATE_ARN="your_certificate_arn"
+export HTTPS_LISTENER_ARN="your_https_listener_arn" 

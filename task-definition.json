@@ -1,0 +1,38 @@
+{
+  "family": "feature-request-task",
+  "networkMode": "awsvpc",
+  "executionRoleArn": "arn:aws:iam::434863064852:role/feature-request-execution-role",
+  "taskRoleArn": "arn:aws:iam::434863064852:role/feature-request-task-role",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "feature-request-container",
+      "image": "434863064852.dkr.ecr.us-east-1.amazonaws.com/feature-request:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "hostPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
+      "secrets": [
+        {"name": "DATABASE_URL", "valueFrom": "arn:aws:secretsmanager:us-east-1:434863064852:secret:feature-request-secrets-jJxI3h:DATABASE_URL::"},
+        {"name": "NEXTAUTH_URL", "valueFrom": "arn:aws:secretsmanager:us-east-1:434863064852:secret:feature-request-secrets-jJxI3h:NEXTAUTH_URL::"},
+        {"name": "NEXTAUTH_SECRET", "valueFrom": "arn:aws:secretsmanager:us-east-1:434863064852:secret:feature-request-secrets-jJxI3h:NEXTAUTH_SECRET::"},
+        {"name": "GOOGLE_CLIENT_ID", "valueFrom": "arn:aws:secretsmanager:us-east-1:434863064852:secret:feature-request-secrets-jJxI3h:GOOGLE_CLIENT_ID::"},
+        {"name": "GOOGLE_CLIENT_SECRET", "valueFrom": "arn:aws:secretsmanager:us-east-1:434863064852:secret:feature-request-secrets-jJxI3h:GOOGLE_CLIENT_SECRET::"}
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/feature-request",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
